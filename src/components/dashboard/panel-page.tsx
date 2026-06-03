@@ -7,6 +7,7 @@ export function PanelPage({
   title,
   description,
   actionLabel,
+  actionHref,
   emptyTitle,
   emptyDescription,
 }: PanelPageProps) {
@@ -24,6 +25,7 @@ export function PanelPage({
         title={emptyTitle}
         description={emptyDescription}
         actionLabel={actionLabel}
+        actionHref={actionHref}
       />
     </div>
   );

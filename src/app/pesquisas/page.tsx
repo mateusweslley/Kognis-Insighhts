@@ -1,16 +1,17 @@
-import { PanelPage } from "@/components/dashboard/panel-page";
+import { SurveyManager } from "@/components/surveys/survey-manager";
 import { AppShell } from "@/components/layout/app-shell";
+import { requireCurrentCompany } from "@/lib/company";
+import { getCompanySurveys } from "@/lib/surveys";
 
-export default function PesquisasPage() {
+export default async function PesquisasPage() {
+  const company = await requireCurrentCompany();
+  const surveys = await getCompanySurveys(company.id);
+
   return (
     <AppShell>
-      <PanelPage
-        title="Pesquisas"
-        description="Crie e gerencie pesquisas de consumidor vinculadas aos seus QR Codes."
-        actionLabel="Nova pesquisa"
-        emptyTitle="Nenhuma pesquisa criada ainda."
-        emptyDescription="Comece criando uma pesquisa simples para coletar perfil, compra, satisfação e comentários."
-      />
+      <div className="mx-auto max-w-6xl">
+        <SurveyManager companyId={company.id} initialSurveys={surveys} />
+      </div>
     </AppShell>
   );
 }

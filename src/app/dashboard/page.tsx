@@ -8,6 +8,7 @@ export default function DashboardPage() {
         title="Dashboard"
         description="Acompanhe os principais sinais das pesquisas e campanhas da sua marca."
         actionLabel="Criar primeira pesquisa"
+        actionHref="/pesquisas"
         emptyTitle="Dashboard aguardando respostas."
         emptyDescription="Quando consumidores responderem suas pesquisas, os indicadores principais aparecerão aqui."
       />
