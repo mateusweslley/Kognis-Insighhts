@@ -97,5 +97,13 @@ Padrao definido:
 - `develop` para desenvolvimento diario.
 - Commits no formato `[SPRINT] Descricao objetiva da entrega`.
 
+Regra de fluxo:
+- Toda sprint principal usa a branch de trabalho `develop`.
+- Sub-sprints, como Sprint 4.1, 4.2 e 4.3, permanecem em `develop` e nao geram merge para `main`.
+- O merge `develop` -> `main` acontece apenas quando a sprint principal estiver validada.
+- Antes de iniciar uma nova sprint principal, validar a sprint anterior, atualizar a documentacao, realizar merge para `main` e criar o commit final da sprint.
+- Ao iniciar uma nova sprint principal, registrar no log o objetivo e as entregas previstas.
+- `main` nunca deve receber codigo nao testado, funcionalidades parciais, features experimentais ou correcoes temporarias.
+
 Cuidados:
 - `.env.local`, `.env`, `.next`, `node_modules`, `.vercel`, `dist`, `build`, `.vscode` e caches locais ficam fora do versionamento.
