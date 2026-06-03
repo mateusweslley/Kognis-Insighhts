@@ -5,12 +5,12 @@ import { getCompanySurveys } from "@/lib/surveys";
 
 export default async function PesquisasPage() {
   const company = await requireCurrentCompany();
-  const surveys = await getCompanySurveys(company.id);
+  const { surveys, error } = await getCompanySurveys(company.id);
 
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl">
-        <SurveyManager companyId={company.id} initialSurveys={surveys} />
+        <SurveyManager companyId={company.id} initialSurveys={surveys} initialError={error} />
       </div>
     </AppShell>
   );

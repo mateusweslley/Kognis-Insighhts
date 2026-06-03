@@ -17,6 +17,7 @@ import { surveyStatusLabels, surveyStatuses } from "@/types/survey";
 type SurveyManagerProps = {
   companyId: string;
   initialSurveys: Survey[];
+  initialError?: string | null;
 };
 
 type SurveyFormState = {
@@ -31,7 +32,7 @@ const defaultForm: SurveyFormState = {
   status: "draft",
 };
 
-export function SurveyManager({ companyId, initialSurveys }: SurveyManagerProps) {
+export function SurveyManager({ companyId, initialSurveys, initialError }: SurveyManagerProps) {
   const router = useRouter();
   const [surveys, setSurveys] = useState(initialSurveys);
   const [isCreating, setIsCreating] = useState(false);
@@ -39,7 +40,7 @@ export function SurveyManager({ companyId, initialSurveys }: SurveyManagerProps)
   const [form, setForm] = useState<SurveyFormState>(defaultForm);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
 
   const editingSurvey = useMemo(
     () => surveys.find((survey) => survey.id === editingSurveyId),
@@ -47,6 +48,11 @@ export function SurveyManager({ companyId, initialSurveys }: SurveyManagerProps)
   );
 
   function startCreate() {
+    if (initialError) {
+      setError(initialError);
+      return;
+    }
+
     setForm(defaultForm);
     setEditingSurveyId(null);
     setIsCreating(true);
