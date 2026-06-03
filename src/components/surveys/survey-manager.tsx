@@ -186,7 +186,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
             Crie e gerencie pesquisas de consumidor da sua empresa.
           </p>
         </div>
-        <Button onClick={startCreate} disabled={isLoading}>
+        <Button className="w-full sm:w-auto" onClick={startCreate} disabled={isLoading}>
           <Plus className="h-4 w-4" />
           Nova pesquisa
         </Button>
@@ -259,11 +259,17 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                 </select>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Button type="submit" disabled={isLoading}>
+                <Button className="w-full sm:w-auto" type="submit" disabled={isLoading}>
                   <Save className="h-4 w-4" />
                   {isLoading ? "Salvando..." : editingSurvey ? "Salvar alteracoes" : "Criar pesquisa"}
                 </Button>
-                <Button type="button" variant="secondary" onClick={cancelForm} disabled={isLoading}>
+                <Button
+                  className="w-full sm:w-auto"
+                  type="button"
+                  variant="secondary"
+                  onClick={cancelForm}
+                  disabled={isLoading}
+                >
                   <X className="h-4 w-4" />
                   Cancelar
                 </Button>
@@ -299,11 +305,17 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button variant="secondary" onClick={() => startEdit(survey)} disabled={isLoading}>
+                  <Button
+                    className="w-full sm:w-auto"
+                    variant="secondary"
+                    onClick={() => startEdit(survey)}
+                    disabled={isLoading}
+                  >
                     <Edit3 className="h-4 w-4" />
                     Editar
                   </Button>
                   <Button
+                    className="w-full sm:w-auto"
                     variant="secondary"
                     onClick={() => archiveSurvey(survey)}
                     disabled={isLoading || survey.status === "archived"}

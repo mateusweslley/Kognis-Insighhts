@@ -51,7 +51,7 @@ export function DashboardOverview({ surveys, error }: DashboardOverviewProps) {
             Você já possui pesquisas cadastradas. As métricas aparecerão quando consumidores começarem a responder.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/pesquisas">Ver pesquisas</Link>
         </Button>
       </div>

@@ -76,7 +76,7 @@ export function AuthCard({ mode }: AuthCardProps) {
   return (
     <main className="grid min-h-screen place-items-center px-6 py-10">
       <div className="w-full max-w-md">
-        <Link href="/" className="mb-8 flex justify-center">
+        <Link href="/dashboard" className="mb-8 flex justify-center" aria-label="Ir para o dashboard">
           <BrandMark />
         </Link>
         <Card>

@@ -88,6 +88,39 @@ Validacoes executadas:
 Pontos de atencao:
 - `npm run build` foi executado, mas o ambiente local bloqueou o acesso ao Google Fonts e a escrita em `.next/trace`.
 
+## Sprint 4.2 - Responsividade, Navegacao e Refinamento de UX
+
+Status: implementada e pronta para validacao manual.
+
+Objetivo:
+- Refinar a experiencia da aplicacao antes da Sprint 5, corrigindo navegacao, responsividade e elementos sem acao.
+
+Correcoes realizadas:
+- Menu lateral passa a abrir e fechar em telas menores, com overlay, clique fora para fechar e animacao suave.
+- Logo da Kognis passa a navegar para `/dashboard`.
+- Botao `Landing` foi substituido por `Inicio`, apontando para `/dashboard`.
+- Campo de busca sem funcionalidade foi removido para evitar falsa interacao.
+- Botao de notificacoes sem acao foi removido.
+- Estados vazios nao exibem mais CTA quando nao ha acao real.
+- Botoes e cards de pesquisas foram ajustados para melhor comportamento em mobile.
+- Revisados placeholders e textos visiveis para remover dados ficticios especificos.
+
+Criterios de validacao:
+- Sidebar abre e fecha em mobile e tablet.
+- Clique fora da sidebar fecha o menu.
+- Logo e botao `Inicio` navegam para `/dashboard`.
+- Nao ha busca falsa nem botoes sem acao.
+- Dashboard, Pesquisas, Configuracoes e Onboarding permanecem responsivos.
+- Nao ha dados ficticios especificos visiveis para o usuario final.
+
+Validacoes executadas:
+- `npx tsc --noEmit`
+- `npm run lint`
+
+Pontos de atencao:
+- Nao havia servidor local respondendo em `localhost:3000` para validacao visual no navegador.
+- `npm run build` foi executado, mas o ambiente local bloqueou o acesso ao Google Fonts usado por `next/font`.
+
 ## Versionamento Git
 
 Status: configurado.

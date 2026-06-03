@@ -27,7 +27,9 @@ export function LandingHero() {
   return (
     <main className="min-h-screen px-6 py-6">
       <nav className="mx-auto flex max-w-6xl items-center justify-between">
-        <BrandMark />
+        <Link href="/dashboard" aria-label="Ir para o dashboard">
+          <BrandMark />
+        </Link>
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost">
             <Link href="/login">Entrar</Link>

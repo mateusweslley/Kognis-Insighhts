@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { CompanyForm } from "@/components/company/company-form";
 import { BrandMark } from "@/components/marketing/brand-mark";
@@ -15,9 +16,9 @@ export default async function OnboardingPage() {
   return (
     <main className="grid min-h-screen place-items-center px-6 py-10">
       <div className="w-full max-w-xl">
-        <div className="mb-8 flex justify-center">
+        <Link href="/dashboard" className="mb-8 flex justify-center" aria-label="Ir para o dashboard">
           <BrandMark />
-        </div>
+        </Link>
         <Card>
           <CardHeader>
             <CardTitle>Cadastre sua empresa</CardTitle>

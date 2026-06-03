@@ -33,11 +33,11 @@ export function EmptyState({
           <Button asChild className="mt-6">
             <Link href={actionHref}>{actionLabel}</Link>
           </Button>
-        ) : (
+        ) : onAction ? (
           <Button className="mt-6" onClick={onAction}>
             {actionLabel}
           </Button>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
