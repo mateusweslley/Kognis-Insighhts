@@ -1,17 +1,15 @@
-import { PanelPage } from "@/components/dashboard/panel-page";
+import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
 import { AppShell } from "@/components/layout/app-shell";
+import { requireCurrentCompany } from "@/lib/company";
+import { getCompanySurveys } from "@/lib/surveys";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const company = await requireCurrentCompany();
+  const { surveys, error } = await getCompanySurveys(company.id);
+
   return (
     <AppShell>
-      <PanelPage
-        title="Dashboard"
-        description="Acompanhe os principais sinais das pesquisas e campanhas da sua marca."
-        actionLabel="Criar primeira pesquisa"
-        actionHref="/pesquisas"
-        emptyTitle="Dashboard aguardando respostas."
-        emptyDescription="Quando consumidores responderem suas pesquisas, os indicadores principais aparecerão aqui."
-      />
+      <DashboardOverview surveys={surveys} error={error} />
     </AppShell>
   );
 }

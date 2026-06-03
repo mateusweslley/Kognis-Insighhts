@@ -221,7 +221,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                   onChange={(event) =>
                     setForm((current) => ({ ...current, title: event.target.value }))
                   }
-                  placeholder="Pesquisa de satisfacao"
+                  placeholder="Titulo da pesquisa"
                   minLength={3}
                   required
                 />

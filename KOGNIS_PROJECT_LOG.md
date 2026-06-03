@@ -60,6 +60,34 @@ Pontos de atencao:
 - O SQL de `supabase/surveys.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
 - `npm run build` foi executado, mas o ambiente bloqueou o acesso ao Google Fonts usado por `next/font`.
 
+## Sprint 4.1 - Ajuste de UX do Dashboard
+
+Status: implementada e pronta para validacao manual.
+
+Objetivo:
+- Fazer o dashboard reconhecer quando a empresa ja possui pesquisas e adaptar o conteudo exibido.
+
+Entregas:
+- Dashboard passa a buscar pesquisas da empresa logada.
+- Usuario sem pesquisas continua vendo o estado vazio com `Criar primeira pesquisa`.
+- Usuario com pesquisas ve CTA `Ver pesquisas`, resumo por status e ate 3 pesquisas recentes.
+- Mantido aviso de que metricas reais dependem de respostas futuras.
+- Placeholders especificos foram trocados por exemplos genericos.
+
+Criterios de teste:
+- Usuario sem pesquisa ve `Criar primeira pesquisa`.
+- Usuario com pesquisa nao ve mais `Criar primeira pesquisa`.
+- Usuario com pesquisa ve total, ativas, rascunhos e arquivadas.
+- Botao do dashboard navega para `/pesquisas`.
+- Recarregar o dashboard mantem o estado correto.
+
+Validacoes executadas:
+- `npx tsc --noEmit`
+- `npm run lint`
+
+Pontos de atencao:
+- `npm run build` foi executado, mas o ambiente local bloqueou o acesso ao Google Fonts e a escrita em `.next/trace`.
+
 ## Versionamento Git
 
 Status: configurado.

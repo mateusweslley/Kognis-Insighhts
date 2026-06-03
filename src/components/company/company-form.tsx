@@ -111,7 +111,7 @@ export function CompanyForm({ mode, company }: CompanyFormProps) {
           id="company-name"
           value={form.name}
           onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-          placeholder="Boana Jeans"
+          placeholder="Nome da sua empresa"
           minLength={2}
           required
         />
@@ -147,7 +147,7 @@ export function CompanyForm({ mode, company }: CompanyFormProps) {
           onChange={(event) =>
             setForm((current) => ({ ...current, logoUrl: event.target.value }))
           }
-          placeholder="https://exemplo.com/logo.png"
+          placeholder="https://empresa.com/logo.png"
           type="url"
         />
       </div>
