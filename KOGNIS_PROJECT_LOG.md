@@ -121,6 +121,55 @@ Pontos de atencao:
 - Nao havia servidor local respondendo em `localhost:3000` para validacao visual no navegador.
 - `npm run build` foi executado, mas o ambiente local bloqueou o acesso ao Google Fonts usado por `next/font`.
 
+## Sprint 5 - Respostas Publicas e Exportacao CSV
+
+Status: aprovada e pronta para merge em `main`.
+
+Objetivo:
+- Permitir que pesquisas ativas recebam respostas anonimas por link publico e que a empresa visualize/exporte essas respostas.
+
+Entregas:
+- Criado SQL da tabela `public.responses`.
+- Criada rota publica `/participar/[surveyId]`.
+- Criado formulario publico com nome, e-mail, nota e comentario.
+- Respostas sao salvas em `responses.answers` como JSON.
+- Tela `/respostas` foi transformada em painel real com total por pesquisa, ultimas respostas e exportacao CSV.
+- Pesquisas exibem link publico para participacao.
+- Dashboard recebeu contador simples de respostas recebidas.
+
+Tabela criada:
+- `public.responses`, com `survey_id`, `answers` e `created_at`.
+
+Regras de seguranca:
+- RLS ativa em `public.responses`.
+- Visitantes anonimos podem inserir resposta apenas em pesquisas ativas.
+- Usuarios autenticados podem visualizar apenas respostas de pesquisas da propria empresa.
+- Nao foram criadas policies publicas de update ou delete.
+- Foi adicionada policy de leitura publica apenas para pesquisas ativas, necessaria para a rota publica validar e exibir pesquisas respondiveis.
+
+Criterios de teste:
+- Pesquisa ativa abre em `/participar/[surveyId]`.
+- Visitante anonimo consegue enviar resposta.
+- Pesquisa em rascunho ou arquivada nao aceita resposta.
+- Dono da empresa ve respostas em `/respostas`.
+- Exportacao CSV baixa os campos `id`, `survey_id`, `name`, `email`, `rating`, `comment` e `created_at`.
+- Outro usuario nao visualiza respostas de empresa alheia.
+
+Validacoes executadas:
+- `npx tsc --noEmit`
+- `npm run lint`
+
+Pontos de atencao:
+- O SQL de `supabase/responses.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
+- `npm run build` foi executado, mas o ambiente local bloqueou o acesso ao Google Fonts usado por `next/font`.
+
+Fora de escopo:
+- Campanhas.
+- QR Code.
+- IA.
+- Cobranca.
+- Multiusuario.
+
 ## Versionamento Git
 
 Status: configurado.

@@ -8,10 +8,11 @@ import { surveyStatusLabels } from "@/types/survey";
 
 type DashboardOverviewProps = {
   surveys: Survey[];
+  totalResponses?: number;
   error?: string | null;
 };
 
-export function DashboardOverview({ surveys, error }: DashboardOverviewProps) {
+export function DashboardOverview({ surveys, totalResponses = 0, error }: DashboardOverviewProps) {
   const totalSurveys = surveys.length;
   const activeSurveys = countSurveysByStatus(surveys, "active");
   const draftSurveys = countSurveysByStatus(surveys, "draft");
@@ -62,11 +63,12 @@ export function DashboardOverview({ surveys, error }: DashboardOverviewProps) {
         </p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryCard title="Total de pesquisas" value={totalSurveys} />
         <SummaryCard title="Pesquisas ativas" value={activeSurveys} />
         <SummaryCard title="Em rascunho" value={draftSurveys} />
         <SummaryCard title="Arquivadas" value={archivedSurveys} />
+        <SummaryCard title="Respostas recebidas" value={totalResponses} />
       </div>
 
       <Card>

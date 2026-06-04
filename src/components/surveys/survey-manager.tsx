@@ -1,6 +1,7 @@
 "use client";
 
-import { Archive, Edit3, Plus, Save, X } from "lucide-react";
+import { Archive, Edit3, ExternalLink, Plus, Save, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
@@ -305,6 +306,12 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button className="w-full sm:w-auto" variant="secondary" asChild>
+                    <Link href={`/participar/${survey.id}`} target="_blank">
+                      <ExternalLink className="h-4 w-4" />
+                      Link publico
+                    </Link>
+                  </Button>
                   <Button
                     className="w-full sm:w-auto"
                     variant="secondary"

@@ -1,15 +1,20 @@
-import { PanelPage } from "@/components/dashboard/panel-page";
+import { ResponsesPanel } from "@/components/responses/responses-panel";
 import { AppShell } from "@/components/layout/app-shell";
+import { requireCurrentCompany } from "@/lib/company";
+import { getResponsesByCompany } from "@/lib/responses";
+import { getCompanySurveys } from "@/lib/surveys";
 
-export default function RespostasPage() {
+export default async function RespostasPage() {
+  const company = await requireCurrentCompany();
+  const [{ surveys, error: surveysError }, { responses, error: responsesError }] =
+    await Promise.all([getCompanySurveys(company.id), getResponsesByCompany(company.id)]);
+
   return (
     <AppShell>
-      <PanelPage
-        title="Respostas"
-        description="Veja as respostas coletadas pelas pesquisas públicas da sua marca."
-        actionLabel="Exportar CSV"
-        emptyTitle="Nenhuma resposta recebida ainda."
-        emptyDescription="As respostas aparecerão aqui quando consumidores acessarem os links públicos das pesquisas."
+      <ResponsesPanel
+        surveys={surveys}
+        responses={responses}
+        error={responsesError ?? surveysError}
       />
     </AppShell>
   );
