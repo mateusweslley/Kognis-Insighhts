@@ -11,9 +11,10 @@ import type { ResponseAnswers } from "@/types/response";
 
 type PublicResponseFormProps = {
   surveyId: string;
+  isPreview?: boolean;
 };
 
-export function PublicResponseForm({ surveyId }: PublicResponseFormProps) {
+export function PublicResponseForm({ surveyId, isPreview = false }: PublicResponseFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState("");
@@ -24,6 +25,11 @@ export function PublicResponseForm({ surveyId }: PublicResponseFormProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isPreview) {
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
@@ -90,9 +96,11 @@ export function PublicResponseForm({ surveyId }: PublicResponseFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Responder pesquisa</CardTitle>
+        <CardTitle>{isPreview ? "Preview da pesquisa" : "Responder pesquisa"}</CardTitle>
         <CardDescription>
-          Leva menos de um minuto. Seus dados ajudam a empresa a melhorar a experiencia.
+          {isPreview
+            ? "Visualizacao administrativa. Nenhuma resposta sera salva."
+            : "Leva menos de um minuto. Seus dados ajudam a empresa a melhorar a experiencia."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -151,9 +159,15 @@ export function PublicResponseForm({ surveyId }: PublicResponseFormProps) {
               {error}
             </p>
           ) : null}
-          <Button className="w-full" type="submit" disabled={isLoading}>
-            {isLoading ? "Enviando..." : "Enviar resposta"}
-          </Button>
+          {isPreview ? (
+            <p className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-3 py-2 text-sm text-white">
+              Preview administrativo: o envio de respostas esta desativado.
+            </p>
+          ) : (
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? "Enviando..." : "Enviar resposta"}
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

@@ -1,16 +1,24 @@
 "use client";
 
-import { Archive, Edit3, ExternalLink, Plus, Save, X } from "lucide-react";
+import { Archive, Edit3, ExternalLink, ListChecks, Plus, QrCode, Save, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { QuestionBuilder } from "@/components/surveys/question-builder";
+import { SurveyQrCode } from "@/components/surveys/survey-qr-code";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { createQuestion } from "@/lib/survey-questions";
+import {
+  createQuestionsFromTemplate,
+  surveyQuestionTemplates,
+  type SurveyQuestionTemplateId,
+} from "@/lib/survey-question-templates";
 import { isValidSurveyStatus } from "@/lib/survey-utils";
 import type { Survey, SurveyStatus } from "@/types/survey";
 import { surveyStatusLabels, surveyStatuses } from "@/types/survey";
@@ -42,10 +50,22 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialError ?? null);
+  const [qrSurveyId, setQrSurveyId] = useState<string | null>(null);
+  const [questionSurveyId, setQuestionSurveyId] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] =
+    useState<SurveyQuestionTemplateId>("customer_profile");
 
   const editingSurvey = useMemo(
     () => surveys.find((survey) => survey.id === editingSurveyId),
     [editingSurveyId, surveys],
+  );
+  const qrSurvey = useMemo(
+    () => surveys.find((survey) => survey.id === qrSurveyId),
+    [qrSurveyId, surveys],
+  );
+  const questionSurvey = useMemo(
+    () => surveys.find((survey) => survey.id === questionSurveyId),
+    [questionSurveyId, surveys],
   );
 
   function startCreate() {
@@ -56,6 +76,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
 
     setForm(defaultForm);
     setEditingSurveyId(null);
+    setSelectedTemplateId("customer_profile");
     setIsCreating(true);
     setError(null);
     setMessage(null);
@@ -77,6 +98,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
     setForm(defaultForm);
     setEditingSurveyId(null);
     setIsCreating(false);
+    setSelectedTemplateId("customer_profile");
     setError(null);
   }
 
@@ -134,15 +156,34 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
     }
 
     const savedSurvey = data as Survey;
+    if (!editingSurvey) {
+      const templateQuestions = createQuestionsFromTemplate(selectedTemplateId, savedSurvey.id);
+      const questionResults = await Promise.all(
+        templateQuestions.map((question) => createQuestion(question)),
+      );
+      const failedQuestion = questionResults.find((result) => result.error);
+
+      if (failedQuestion?.error) {
+        setError(failedQuestion.error);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     setSurveys((current) =>
       editingSurvey
         ? current.map((survey) => (survey.id === savedSurvey.id ? savedSurvey : survey))
         : [savedSurvey, ...current],
     );
-    setMessage(editingSurvey ? "Pesquisa atualizada com sucesso." : "Pesquisa criada com sucesso.");
+    setMessage(
+      editingSurvey
+        ? "Pesquisa atualizada com sucesso."
+        : "Pesquisa criada com sucesso. Revise as perguntas antes de publicar.",
+    );
     setForm(defaultForm);
     setEditingSurveyId(null);
     setIsCreating(false);
+    setQuestionSurveyId(editingSurvey ? questionSurveyId : savedSurvey.id);
     setIsLoading(false);
     router.refresh();
   }
@@ -209,11 +250,42 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
           <CardHeader>
             <CardTitle>{editingSurvey ? "Editar pesquisa" : "Nova pesquisa"}</CardTitle>
             <CardDescription>
-              Defina as informacoes basicas da pesquisa. Campanhas e QR Codes entram em outra sprint.
+              Defina as informacoes basicas da pesquisa e escolha quando ela podera receber respostas.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
+              {!editingSurvey ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label>O que voce deseja descobrir?</Label>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Escolha um ponto de partida. Voce podera editar as perguntas depois.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {surveyQuestionTemplates.map((template) => {
+                      const isSelected = selectedTemplateId === template.id;
+
+                      return (
+                        <button
+                          key={template.id}
+                          type="button"
+                          onClick={() => setSelectedTemplateId(template.id)}
+                          className={`rounded-md border p-4 text-left transition-colors ${
+                            isSelected
+                              ? "border-kognis-teal bg-kognis-teal/10 text-white"
+                              : "border-white/10 bg-white/[0.035] text-muted-foreground hover:border-white/30 hover:text-white"
+                          }`}
+                        >
+                          <span className="block text-sm font-semibold text-white">{template.title}</span>
+                          <span className="mt-1 block text-sm leading-5">{template.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="survey-title">Titulo</Label>
                 <Input
@@ -280,6 +352,23 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
         </Card>
       ) : null}
 
+      {qrSurvey ? (
+        <SurveyQrCode
+          surveyId={qrSurvey.id}
+          surveyTitle={qrSurvey.title}
+          surveyStatus={qrSurvey.status}
+          onClose={() => setQrSurveyId(null)}
+        />
+      ) : null}
+
+      {questionSurvey ? (
+        <QuestionBuilder
+          surveyId={questionSurvey.id}
+          surveyTitle={questionSurvey.title}
+          onClose={() => setQuestionSurveyId(null)}
+        />
+      ) : null}
+
       {surveys.length === 0 && !shouldShowForm ? (
         <EmptyState
           title="Nenhuma pesquisa criada ainda."
@@ -297,7 +386,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="truncate text-lg font-semibold text-white">{survey.title}</h2>
-                    <span className="rounded-md border border-white/10 bg-white/[0.055] px-2 py-1 text-xs font-medium text-muted-foreground">
+                    <span className={`rounded-md border px-2 py-1 text-xs font-medium ${getSurveyStatusStyle(survey.status)}`}>
                       {surveyStatusLabels[survey.status]}
                     </span>
                   </div>
@@ -305,7 +394,25 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                     {survey.description || "Sem descricao."}
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+                  <Button
+                    className="w-full sm:w-auto"
+                    variant="secondary"
+                    onClick={() => setQuestionSurveyId(survey.id)}
+                    disabled={isLoading}
+                  >
+                    <ListChecks className="h-4 w-4" />
+                    Perguntas
+                  </Button>
+                  <Button
+                    className="w-full sm:w-auto"
+                    variant="secondary"
+                    onClick={() => setQrSurveyId(survey.id)}
+                    disabled={isLoading}
+                  >
+                    <QrCode className="h-4 w-4" />
+                    QR Code
+                  </Button>
                   <Button className="w-full sm:w-auto" variant="secondary" asChild>
                     <Link href={`/participar/${survey.id}`} target="_blank">
                       <ExternalLink className="h-4 w-4" />
@@ -356,4 +463,16 @@ function getFriendlySurveyError(message: string, code?: string) {
   }
 
   return "Nao foi possivel salvar a pesquisa agora. Tente novamente.";
+}
+
+function getSurveyStatusStyle(status: SurveyStatus) {
+  if (status === "active") {
+    return "border-kognis-teal/30 bg-kognis-teal/10 text-kognis-teal";
+  }
+
+  if (status === "archived") {
+    return "border-red-400/30 bg-red-500/10 text-red-100";
+  }
+
+  return "border-yellow-300/30 bg-yellow-300/10 text-yellow-100";
 }

@@ -1,16 +1,24 @@
-import { PanelPage } from "@/components/dashboard/panel-page";
+import { CampaignManager } from "@/components/campaigns/campaign-manager";
 import { AppShell } from "@/components/layout/app-shell";
+import { getCampaignsByCompany } from "@/lib/campaigns";
+import { requireCurrentCompany } from "@/lib/company";
+import { getCompanySurveys } from "@/lib/surveys";
 
-export default function CampanhasPage() {
+export default async function CampanhasPage() {
+  const company = await requireCurrentCompany();
+  const [{ campaigns, error: campaignsError }, { surveys, error: surveysError }] =
+    await Promise.all([getCampaignsByCompany(company.id), getCompanySurveys(company.id)]);
+
   return (
     <AppShell>
-      <PanelPage
-        title="Campanhas"
-        description="Organize QR Codes por origem, como etiqueta, sacola, loja física ou pós-venda."
-        actionLabel="Nova campanha"
-        emptyTitle="Nenhuma campanha criada ainda."
-        emptyDescription="Cada campanha ajudará a identificar de onde vieram as respostas dos consumidores."
-      />
+      <div className="mx-auto max-w-6xl">
+        <CampaignManager
+          companyId={company.id}
+          initialCampaigns={campaigns}
+          surveys={surveys}
+          initialError={campaignsError ?? surveysError}
+        />
+      </div>
     </AppShell>
   );
 }

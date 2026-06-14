@@ -13,7 +13,7 @@ export type Survey = {
 };
 
 export const surveyStatusLabels: Record<SurveyStatus, string> = {
-  draft: "Rascunho",
-  active: "Ativa",
-  archived: "Arquivada",
+  draft: "Em preparacao",
+  active: "Recebendo respostas",
+  archived: "Encerrada",
 };

@@ -1,39 +1,37 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { exportResponsesToCsv } from "@/lib/response-utils";
-import type { SurveyResponseWithSurvey } from "@/types/response";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { Survey } from "@/types/survey";
 
 type ResponsesPanelProps = {
   surveys: Survey[];
-  responses: SurveyResponseWithSurvey[];
+  responseCounts: Record<string, number>;
   error?: string | null;
 };
 
-export function ResponsesPanel({ surveys, responses, error }: ResponsesPanelProps) {
-  const responsesBySurvey = new Map<string, number>();
+export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPanelProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const totalResponses = Object.values(responseCounts).reduce((total, count) => total + count, 0);
+  const filteredSurveys = useMemo(() => {
+    const normalizedSearch = normalizeSearch(searchTerm);
 
-  responses.forEach((response) => {
-    responsesBySurvey.set(response.survey_id, (responsesBySurvey.get(response.survey_id) ?? 0) + 1);
-  });
+    if (!normalizedSearch) {
+      return surveys;
+    }
 
-  function handleExportCsv() {
-    const csv = exportResponsesToCsv(responses);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    return surveys.filter((survey) => {
+      const searchableText = normalizeSearch(`${survey.title} ${survey.description ?? ""}`);
 
-    link.href = url;
-    link.download = "respostas-kognis.csv";
-    link.click();
-
-    URL.revokeObjectURL(url);
-  }
+      return searchableText.includes(normalizedSearch);
+    });
+  }, [searchTerm, surveys]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -41,17 +39,9 @@ export function ResponsesPanel({ surveys, responses, error }: ResponsesPanelProp
         <div>
           <h1 className="text-3xl font-semibold text-white">Respostas</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Veja as respostas coletadas pelas pesquisas publicas da sua marca.
+            Abra uma pesquisa para visualizar quem respondeu, quando respondeu e o que respondeu.
           </p>
         </div>
-        <Button
-          className="w-full sm:w-auto"
-          onClick={handleExportCsv}
-          disabled={responses.length === 0}
-        >
-          <Download className="h-4 w-4" />
-          Exportar CSV
-        </Button>
       </div>
 
       {error ? (
@@ -60,74 +50,74 @@ export function ResponsesPanel({ surveys, responses, error }: ResponsesPanelProp
         </p>
       ) : null}
 
-      {responses.length === 0 ? (
+      {surveys.length === 0 ? (
         <EmptyState
-          title="Nenhuma resposta recebida ainda."
-          description="As respostas aparecerão aqui quando consumidores acessarem os links publicos das pesquisas ativas."
+          title="Nenhuma pesquisa criada ainda."
+          description="Crie uma pesquisa para comecar a coletar respostas dos consumidores."
           actionLabel="Ver pesquisas"
           actionHref="/pesquisas"
         />
       ) : null}
 
+      {surveys.length > 0 && totalResponses === 0 ? (
+        <p className="rounded-md border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
+          Nenhuma resposta recebida ainda. As respostas aparecerao aqui quando consumidores
+          acessarem os links publicos ou QR Codes das pesquisas ativas.
+        </p>
+      ) : null}
+
+      {surveys.length > 0 ? (
+        <div className="relative max-w-xl">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Buscar pesquisa..."
+            className="pl-10"
+          />
+        </div>
+      ) : null}
+
+      {surveys.length > 0 && filteredSurveys.length === 0 ? (
+        <p className="rounded-md border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
+          Nenhuma pesquisa encontrada para a busca atual.
+        </p>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {surveys.map((survey) => (
+        {filteredSurveys.map((survey) => (
           <Card key={survey.id}>
-            <CardContent className="p-5">
-              <p className="truncate text-sm font-medium text-muted-foreground">{survey.title}</p>
-              <p className="mt-3 text-3xl font-semibold text-white">
-                {responsesBySurvey.get(survey.id) ?? 0}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">respostas</p>
+            <CardContent className="flex h-full flex-col gap-5 p-5">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-muted-foreground">{survey.title}</p>
+                <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                  {survey.description || "Sem descricao."}
+                </p>
+              </div>
+              <div>
+                <p className="text-3xl font-semibold text-white">
+                  {responseCounts[survey.id] ?? 0}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">respostas</p>
+              </div>
+              <Button className="mt-auto w-full" asChild>
+                <Link href={`/respostas/${survey.id}`}>
+                  Ver respostas
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         ))}
       </div>
-
-      {responses.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ultimas respostas</CardTitle>
-            <CardDescription>
-              Respostas mais recentes coletadas por links publicos de pesquisas.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {responses.slice(0, 10).map((response) => (
-              <div
-                key={response.id}
-                className="rounded-md border border-white/10 bg-white/[0.035] px-4 py-3"
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-white">{response.survey_title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {response.answers.name} · Nota {response.answers.rating}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(response.created_at)}
-                  </span>
-                </div>
-                {response.answers.comment ? (
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {response.answers.comment}
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }
 
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }

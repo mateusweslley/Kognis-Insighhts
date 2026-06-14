@@ -1,7 +1,8 @@
+import { DynamicPublicResponseForm } from "@/components/responses/dynamic-public-response-form";
 import { PublicResponseForm } from "@/components/responses/public-response-form";
 import { BrandMark } from "@/components/marketing/brand-mark";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPublicSurveyById } from "@/lib/responses";
+import { getPublicSurveyById, getPublicSurveyQuestions } from "@/lib/responses";
 
 type PublicSurveyPageProps = {
   params: {
@@ -42,6 +43,23 @@ export default async function PublicSurveyPage({ params }: PublicSurveyPageProps
     );
   }
 
+  const { questions, error: questionsError } = await getPublicSurveyQuestions(survey.id);
+
+  if (questionsError) {
+    return (
+      <PublicPageShell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Pesquisa indisponivel</CardTitle>
+            <CardDescription>
+              Nao foi possivel carregar as perguntas desta pesquisa agora.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </PublicPageShell>
+    );
+  }
+
   return (
     <PublicPageShell>
       <div className="mb-6">
@@ -50,7 +68,11 @@ export default async function PublicSurveyPage({ params }: PublicSurveyPageProps
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{survey.description}</p>
         ) : null}
       </div>
-      <PublicResponseForm surveyId={survey.id} />
+      {questions.length > 0 ? (
+        <DynamicPublicResponseForm surveyId={survey.id} questions={questions} />
+      ) : (
+        <PublicResponseForm surveyId={survey.id} />
+      )}
     </PublicPageShell>
   );
 }
@@ -63,6 +85,9 @@ function PublicPageShell({ children }: { children: React.ReactNode }) {
           <BrandMark />
         </div>
         {children}
+        <p className="mt-8 text-center text-xs text-muted-foreground">
+          Powered by Kognis Insights
+        </p>
       </div>
     </main>
   );
