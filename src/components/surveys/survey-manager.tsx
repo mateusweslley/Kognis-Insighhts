@@ -1,17 +1,31 @@
 "use client";
 
-import { Archive, Edit3, ExternalLink, ListChecks, Plus, QrCode, Save, X } from "lucide-react";
+import {
+  Archive,
+  CheckCircle2,
+  Edit3,
+  ExternalLink,
+  ListChecks,
+  MoreVertical,
+  Plus,
+  QrCode,
+  Save,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { PageHeader } from "@/components/layout/page-header";
 import { QuestionBuilder } from "@/components/surveys/question-builder";
 import { SurveyQrCode } from "@/components/surveys/survey-qr-code";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 import { createQuestion } from "@/lib/survey-questions";
 import {
@@ -52,6 +66,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [qrSurveyId, setQrSurveyId] = useState<string | null>(null);
   const [questionSurveyId, setQuestionSurveyId] = useState<string | null>(null);
+  const [nextStepSurveyId, setNextStepSurveyId] = useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] =
     useState<SurveyQuestionTemplateId>("customer_profile");
 
@@ -66,6 +81,10 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
   const questionSurvey = useMemo(
     () => surveys.find((survey) => survey.id === questionSurveyId),
     [questionSurveyId, surveys],
+  );
+  const nextStepSurvey = useMemo(
+    () => surveys.find((survey) => survey.id === nextStepSurveyId),
+    [nextStepSurveyId, surveys],
   );
 
   function startCreate() {
@@ -112,13 +131,13 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
     const description = form.description.trim() || null;
 
     if (title.length < 3) {
-      setError("Informe um titulo com pelo menos 3 caracteres.");
+      setError("Informe um título com pelo menos 3 caracteres.");
       setIsLoading(false);
       return;
     }
 
     if (!isValidSurveyStatus(form.status)) {
-      setError("Escolha um status valido para a pesquisa.");
+      setError("Escolha um status válido para a pesquisa.");
       setIsLoading(false);
       return;
     }
@@ -180,6 +199,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
         ? "Pesquisa atualizada com sucesso."
         : "Pesquisa criada com sucesso. Revise as perguntas antes de publicar.",
     );
+    setNextStepSurveyId(savedSurvey.id);
     setForm(defaultForm);
     setEditingSurveyId(null);
     setIsCreating(false);
@@ -212,7 +232,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
     setSurveys((current) =>
       current.map((item) => (item.id === archivedSurvey.id ? archivedSurvey : item)),
     );
-    setMessage("Pesquisa arquivada.");
+    setMessage("Pesquisa encerrada.");
     setIsLoading(false);
     router.refresh();
   }
@@ -221,26 +241,24 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Pesquisas</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Crie e gerencie pesquisas de consumidor da sua empresa.
-          </p>
-        </div>
-        <Button className="w-full sm:w-auto" onClick={startCreate} disabled={isLoading}>
-          <Plus className="h-4 w-4" />
-          Nova pesquisa
-        </Button>
-      </div>
+      <PageHeader
+        title="Pesquisas"
+        description="Crie, organize e compartilhe pesquisas com seus clientes."
+        actions={
+          <Button className="w-full sm:w-auto" onClick={startCreate} disabled={isLoading}>
+            <Plus className="h-4 w-4" />
+            Nova pesquisa
+          </Button>
+        }
+      />
 
       {message ? (
-        <p className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-3 py-2 text-sm text-white">
+        <p className="rounded-md border border-success/20 bg-success-soft px-3 py-2 text-sm text-success">
           {message}
         </p>
       ) : null}
       {error ? (
-        <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+        <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -250,7 +268,7 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
           <CardHeader>
             <CardTitle>{editingSurvey ? "Editar pesquisa" : "Nova pesquisa"}</CardTitle>
             <CardDescription>
-              Defina as informacoes basicas da pesquisa e escolha quando ela podera receber respostas.
+              Defina as informações básicas da pesquisa e escolha quando ela poderá receber respostas.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -258,9 +276,9 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
               {!editingSurvey ? (
                 <div className="space-y-3">
                   <div>
-                    <Label>O que voce deseja descobrir?</Label>
+                    <Label>O que você deseja descobrir?</Label>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Escolha um ponto de partida. Voce podera editar as perguntas depois.
+                      Escolha um ponto de partida. Você poderá editar as perguntas depois.
                     </p>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -274,11 +292,11 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                           onClick={() => setSelectedTemplateId(template.id)}
                           className={`rounded-md border p-4 text-left transition-colors ${
                             isSelected
-                              ? "border-kognis-teal bg-kognis-teal/10 text-white"
-                              : "border-white/10 bg-white/[0.035] text-muted-foreground hover:border-white/30 hover:text-white"
+                              ? "border-brand bg-brand-soft text-text-primary"
+                              : "border-border bg-surface-muted text-text-secondary hover:border-border-strong hover:text-text-primary"
                           }`}
                         >
-                          <span className="block text-sm font-semibold text-white">{template.title}</span>
+                          <span className="block text-sm font-semibold text-text-primary">{template.title}</span>
                           <span className="mt-1 block text-sm leading-5">{template.description}</span>
                         </button>
                       );
@@ -287,33 +305,32 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                 </div>
               ) : null}
               <div className="space-y-2">
-                <Label htmlFor="survey-title">Titulo</Label>
+                <Label htmlFor="survey-title">Título</Label>
                 <Input
                   id="survey-title"
                   value={form.title}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, title: event.target.value }))
                   }
-                  placeholder="Titulo da pesquisa"
+                  placeholder="Título da pesquisa"
                   minLength={3}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="survey-description">Descricao</Label>
-                <textarea
+                <Label htmlFor="survey-description">Descrição</Label>
+                <Textarea
                   id="survey-description"
                   value={form.description}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, description: event.target.value }))
                   }
                   placeholder="Conte rapidamente o objetivo da pesquisa"
-                  className="min-h-28 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="survey-status">Status</Label>
-                <select
+                <Select
                   id="survey-status"
                   value={form.status}
                   onChange={(event) =>
@@ -322,19 +339,18 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                       status: event.target.value as SurveyStatus,
                     }))
                   }
-                  className="flex h-11 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
                 >
                   {surveyStatuses.map((status) => (
-                    <option key={status} value={status} className="bg-kognis-cyber text-white">
+                    <option key={status} value={status}>
                       {surveyStatusLabels[status]}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button className="w-full sm:w-auto" type="submit" disabled={isLoading}>
                   <Save className="h-4 w-4" />
-                  {isLoading ? "Salvando..." : editingSurvey ? "Salvar alteracoes" : "Criar pesquisa"}
+                  {isLoading ? "Salvando..." : editingSurvey ? "Salvar alterações" : "Criar pesquisa"}
                 </Button>
                 <Button
                   className="w-full sm:w-auto"
@@ -369,10 +385,19 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
         />
       ) : null}
 
+      {nextStepSurvey && !shouldShowForm ? (
+        <NextStepsPanel
+          survey={nextStepSurvey}
+          onOpenQuestions={() => setQuestionSurveyId(nextStepSurvey.id)}
+          onOpenQr={() => setQrSurveyId(nextStepSurvey.id)}
+          onDismiss={() => setNextStepSurveyId(null)}
+        />
+      ) : null}
+
       {surveys.length === 0 && !shouldShowForm ? (
         <EmptyState
           title="Nenhuma pesquisa criada ainda."
-          description="Comece criando uma pesquisa simples para coletar perfil, compra, satisfacao e comentarios."
+          description="Comece criando uma pesquisa simples para coletar perfil, compra, satisfação e comentários."
           actionLabel="Nova pesquisa"
           onAction={startCreate}
         />
@@ -382,61 +407,79 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
         <div className="grid gap-4">
           {surveys.map((survey) => (
             <Card key={survey.id}>
-              <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+              <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between md:p-5">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-lg font-semibold text-white">{survey.title}</h2>
+                    <h2 className="truncate text-base font-semibold text-text-primary md:text-lg">{survey.title}</h2>
                     <span className={`rounded-md border px-2 py-1 text-xs font-medium ${getSurveyStatusStyle(survey.status)}`}>
                       {surveyStatusLabels[survey.status]}
                     </span>
                   </div>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                    {survey.description || "Sem descricao."}
+                  <p className="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                    {survey.description || "Sem descrição."}
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+                <div className="grid grid-cols-[1fr_auto] gap-2 md:flex md:items-center md:justify-end">
                   <Button
-                    className="w-full sm:w-auto"
-                    variant="secondary"
+                    className="w-full md:w-auto"
+                    size="sm"
                     onClick={() => setQuestionSurveyId(survey.id)}
                     disabled={isLoading}
                   >
                     <ListChecks className="h-4 w-4" />
-                    Perguntas
+                    <span className="sm:hidden">Gerenciar</span>
+                    <span className="hidden sm:inline">Gerenciar pesquisa</span>
                   </Button>
-                  <Button
-                    className="w-full sm:w-auto"
-                    variant="secondary"
-                    onClick={() => setQrSurveyId(survey.id)}
-                    disabled={isLoading}
-                  >
-                    <QrCode className="h-4 w-4" />
-                    QR Code
-                  </Button>
-                  <Button className="w-full sm:w-auto" variant="secondary" asChild>
-                    <Link href={`/participar/${survey.id}`} target="_blank">
-                      <ExternalLink className="h-4 w-4" />
-                      Link publico
-                    </Link>
-                  </Button>
-                  <Button
-                    className="w-full sm:w-auto"
-                    variant="secondary"
-                    onClick={() => startEdit(survey)}
-                    disabled={isLoading}
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    Editar
-                  </Button>
-                  <Button
-                    className="w-full sm:w-auto"
-                    variant="secondary"
-                    onClick={() => archiveSurvey(survey)}
-                    disabled={isLoading || survey.status === "archived"}
-                  >
-                    <Archive className="h-4 w-4" />
-                    Arquivar
-                  </Button>
+                  <details className="relative">
+                    <summary className="inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-border bg-surface text-text-primary shadow-subtle transition-colors hover:bg-surface-muted [&::-webkit-details-marker]:hidden">
+                      <MoreVertical className="h-4 w-4" />
+                      <span className="sr-only">Mais ações</span>
+                    </summary>
+                    <div className="absolute right-0 z-20 mt-2 grid w-56 gap-2 rounded-md border border-border bg-surface p-2 shadow-floating">
+                      <Button
+                        className="justify-start"
+                        variant="ghost"
+                        onClick={() => setQuestionSurveyId(survey.id)}
+                        disabled={isLoading}
+                      >
+                        <ListChecks className="h-4 w-4" />
+                        Perguntas
+                      </Button>
+                      <Button
+                        className="justify-start"
+                        variant="ghost"
+                        onClick={() => setQrSurveyId(survey.id)}
+                        disabled={isLoading}
+                      >
+                        <QrCode className="h-4 w-4" />
+                        QR Code
+                      </Button>
+                      <Button className="justify-start" variant="ghost" asChild>
+                        <Link href={`/participar/${survey.id}`} target="_blank">
+                          <ExternalLink className="h-4 w-4" />
+                          Link público
+                        </Link>
+                      </Button>
+                      <Button
+                        className="justify-start"
+                        variant="ghost"
+                        onClick={() => startEdit(survey)}
+                        disabled={isLoading}
+                      >
+                        <Edit3 className="h-4 w-4" />
+                        Editar
+                      </Button>
+                      <Button
+                        className="justify-start"
+                        variant="ghost"
+                        onClick={() => archiveSurvey(survey)}
+                        disabled={isLoading || survey.status === "archived"}
+                      >
+                        <Archive className="h-4 w-4" />
+                        Encerrar
+                      </Button>
+                    </div>
+                  </details>
                 </div>
               </CardContent>
             </Card>
@@ -447,32 +490,89 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
   );
 }
 
+function NextStepsPanel({
+  survey,
+  onOpenQuestions,
+  onOpenQr,
+  onDismiss,
+}: {
+  survey: Survey;
+  onOpenQuestions: () => void;
+  onOpenQr: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-success">
+              <CheckCircle2 className="h-4 w-4" />
+              Pesquisa pronta para avançar
+            </div>
+            <h2 className="mt-2 text-xl font-semibold text-text-primary">{survey.title}</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Próximos passos: revise as perguntas, veja como o cliente enxergará a pesquisa e gere o QR Code quando estiver tudo pronto.
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onDismiss}>
+            <X className="h-4 w-4" />
+            <span className="sr-only">Ocultar próximos passos</span>
+          </Button>
+        </div>
+        <div className="grid gap-2 md:grid-cols-4">
+          <Button className="w-full" variant="secondary" onClick={onOpenQuestions}>
+            <ListChecks className="h-4 w-4" />
+            Configurar perguntas
+          </Button>
+          <Button className="w-full" variant="secondary" asChild>
+            <Link href={`/pesquisas/${survey.id}/preview`} target="_blank">
+              <ExternalLink className="h-4 w-4" />
+              Visualizar pesquisa
+            </Link>
+          </Button>
+          <Button className="w-full" variant="secondary" onClick={onOpenQr}>
+            <QrCode className="h-4 w-4" />
+            Gerar QR Code
+          </Button>
+          <Button className="w-full" variant="secondary" asChild>
+            <Link href={`/participar/${survey.id}`} target="_blank">
+              <ExternalLink className="h-4 w-4" />
+              Compartilhar pesquisa
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function getFriendlySurveyError(message: string, code?: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (code === "23514") {
-    return "Revise titulo e status antes de salvar a pesquisa.";
+    return "Revise título e status antes de salvar a pesquisa.";
   }
 
   if (normalizedMessage.includes("permission") || normalizedMessage.includes("row-level security")) {
-    return "Voce nao tem permissao para alterar esta pesquisa.";
+    return "Você não tem permissão para alterar esta pesquisa.";
   }
 
   if (normalizedMessage.includes("failed to fetch") || normalizedMessage.includes("network")) {
-    return "Nao foi possivel conectar ao Supabase. Verifique sua conexao e tente novamente.";
+    return "Não foi possível conectar ao Supabase. Verifique sua conexão e tente novamente.";
   }
 
-  return "Nao foi possivel salvar a pesquisa agora. Tente novamente.";
+  return "Não foi possível salvar a pesquisa agora. Tente novamente.";
 }
 
 function getSurveyStatusStyle(status: SurveyStatus) {
   if (status === "active") {
-    return "border-kognis-teal/30 bg-kognis-teal/10 text-kognis-teal";
+    return "border-success/20 bg-success-soft text-success";
   }
 
   if (status === "archived") {
-    return "border-red-400/30 bg-red-500/10 text-red-100";
+    return "border-danger/20 bg-danger-soft text-danger";
   }
 
-  return "border-yellow-300/30 bg-yellow-300/10 text-yellow-100";
+  return "border-warning/25 bg-warning-soft text-warning";
 }

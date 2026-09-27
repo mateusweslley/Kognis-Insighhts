@@ -21,8 +21,15 @@ export async function getCurrentCompany() {
     .maybeSingle();
 
   if (error) {
-    throw new Error("Nao foi possivel carregar os dados da empresa.");
-  }
+  console.error("Erro ao carregar empresa:", {
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+    code: error.code,
+  });
+
+  throw new Error("Nao foi possivel carregar os dados da empresa.");
+}
 
   return data as Company | null;
 }

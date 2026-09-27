@@ -18,9 +18,9 @@ export default async function PublicSurveyPage({ params }: PublicSurveyPageProps
       <PublicPageShell>
         <Card>
           <CardHeader>
-            <CardTitle>Pesquisa indisponivel</CardTitle>
+            <CardTitle>Pesquisa indisponível</CardTitle>
             <CardDescription>
-              Esta pesquisa nao existe ou nao esta aceitando respostas no momento.
+              Esta pesquisa não existe ou não está aceitando respostas no momento.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -33,9 +33,9 @@ export default async function PublicSurveyPage({ params }: PublicSurveyPageProps
       <PublicPageShell>
         <Card>
           <CardHeader>
-            <CardTitle>Pesquisa indisponivel</CardTitle>
+            <CardTitle>Pesquisa indisponível</CardTitle>
             <CardDescription>
-              Esta pesquisa nao esta aceitando respostas no momento.
+              Esta pesquisa não está aceitando respostas no momento.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -50,9 +50,9 @@ export default async function PublicSurveyPage({ params }: PublicSurveyPageProps
       <PublicPageShell>
         <Card>
           <CardHeader>
-            <CardTitle>Pesquisa indisponivel</CardTitle>
+            <CardTitle>Pesquisa indisponível</CardTitle>
             <CardDescription>
-              Nao foi possivel carregar as perguntas desta pesquisa agora.
+              Não foi possível carregar as perguntas desta pesquisa agora.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -63,7 +63,7 @@ export default async function PublicSurveyPage({ params }: PublicSurveyPageProps
   return (
     <PublicPageShell>
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold text-white">{survey.title}</h1>
+        <h1 className="text-3xl font-semibold text-text-primary">{survey.title}</h1>
         {survey.description ? (
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{survey.description}</p>
         ) : null}

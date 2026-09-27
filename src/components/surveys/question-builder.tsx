@@ -1,6 +1,17 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Edit3, ExternalLink, Plus, Save, Trash2, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckCircle2,
+  Edit3,
+  ExternalLink,
+  MoreVertical,
+  Plus,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
@@ -8,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   createQuestion,
   deleteQuestion,
@@ -124,7 +137,7 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
     }
 
     if (form.type === "single_choice" && options.length < 2) {
-      setError("Adicione pelo menos duas opcoes para escolha unica.");
+      setError("Adicione pelo menos duas opções para escolha única.");
       setIsLoading(false);
       return;
     }
@@ -168,6 +181,12 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
   }
 
   async function removeQuestion(question: SurveyQuestion) {
+    const shouldRemove = window.confirm("Tem certeza que deseja excluir esta pergunta?");
+
+    if (!shouldRemove) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setMessage(null);
@@ -186,7 +205,7 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
 
     setQuestions(remainingQuestions);
     await reorderQuestions(remainingQuestions);
-    setMessage("Pergunta excluida.");
+    setMessage("Pergunta excluída.");
     setIsLoading(false);
   }
 
@@ -229,21 +248,26 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
         <div>
           <CardTitle>Perguntas da pesquisa</CardTitle>
           <CardDescription>
-            Organize o que voce deseja descobrir em {surveyTitle}.
+            Organize o que você deseja descobrir em {surveyTitle}.
           </CardDescription>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
           <Button className="w-full sm:w-auto" variant="secondary" asChild>
             <Link href={`/pesquisas/${surveyId}/preview`} target="_blank">
               <ExternalLink className="h-4 w-4" />
-              Ver como o cliente vera
+              Preview
             </Link>
           </Button>
           <Button className="w-full sm:w-auto" onClick={startCreate} disabled={isLoading}>
             <Plus className="h-4 w-4" />
-            Adicionar pergunta
+            Nova pergunta
           </Button>
-          <Button className="w-full sm:w-auto" variant="secondary" onClick={onClose} disabled={isLoading}>
+          <Button
+            className="col-span-2 w-full sm:w-auto"
+            variant="ghost"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             <X className="h-4 w-4" />
             Fechar
           </Button>
@@ -251,18 +275,18 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
       </CardHeader>
       <CardContent className="space-y-4">
         {message ? (
-          <p className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-3 py-2 text-sm text-white">
+          <p className="rounded-md border border-success/20 bg-success-soft px-3 py-2 text-sm text-success">
             {message}
           </p>
         ) : null}
         {error ? (
-          <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+          <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
             {error}
           </p>
         ) : null}
 
         {isFormOpen ? (
-          <form className="space-y-4 rounded-md border border-white/10 p-4" onSubmit={handleSubmit}>
+          <form className="space-y-4 rounded-md border border-border p-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label htmlFor="question-title">Pergunta</Label>
               <Input
@@ -275,21 +299,21 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="question-description">Descricao</Label>
-              <textarea
+              <Label htmlFor="question-description">Descrição</Label>
+              <Textarea
                 id="question-description"
                 value={form.description}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, description: event.target.value }))
                 }
                 placeholder="Ajude o cliente a entender a pergunta, se precisar"
-                className="min-h-24 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
+                className="min-h-24"
               />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="question-type">Como a pessoa responde?</Label>
-                <select
+                <Select
                   id="question-type"
                   value={form.type}
                   onChange={(event) =>
@@ -298,38 +322,36 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
                       type: event.target.value as SurveyQuestionType,
                     }))
                   }
-                  className="flex h-11 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
                 >
                   {surveyQuestionTypes.map((type) => (
-                    <option key={type} value={type} className="bg-kognis-cyber text-white">
+                    <option key={type} value={type}>
                       {surveyQuestionTypeLabels[type]}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
-              <label className="flex items-center gap-3 rounded-md border border-white/10 px-3 py-3 text-sm text-white md:mt-8">
+              <label className="flex items-center gap-3 rounded-md border border-border px-3 py-3 text-sm text-text-primary md:mt-8">
                 <input
                   type="checkbox"
                   checked={form.required}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, required: event.target.checked }))
                   }
-                  className="h-4 w-4 accent-kognis-teal"
+                  className="h-4 w-4 accent-brand"
                 />
-                Resposta obrigatoria
+                Resposta obrigatória
               </label>
             </div>
             {form.type === "single_choice" ? (
               <div className="space-y-2">
-                <Label htmlFor="question-options">Opcoes</Label>
-                <textarea
+                <Label htmlFor="question-options">Opções</Label>
+                <Textarea
                   id="question-options"
                   value={form.optionsText}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, optionsText: event.target.value }))
                   }
-                  placeholder={"Uma opcao por linha\nSim\nNao\nTalvez"}
-                  className="min-h-28 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
+                  placeholder={"Uma opção por linha\nSim\nNão\nTalvez"}
                 />
               </div>
             ) : null}
@@ -353,78 +375,147 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
         ) : null}
 
         {questions.length === 0 && !isLoading ? (
-          <div className="rounded-md border border-dashed border-white/15 p-5 text-sm text-muted-foreground">
-            Esta pesquisa ainda nao tem perguntas personalizadas.
+          <div className="rounded-md border border-dashed border-border p-5 text-sm text-text-muted">
+            Esta pesquisa ainda não tem perguntas personalizadas.
           </div>
         ) : null}
 
         <div className="space-y-3">
           {questions.map((question, index) => (
-            <div
+            <QuestionItem
               key={question.id}
-              className="flex flex-col gap-4 rounded-md border border-white/10 bg-white/[0.035] p-4 md:flex-row md:items-center md:justify-between"
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">{index + 1}</span>
-                  <h3 className="text-base font-semibold text-white">{question.title}</h3>
-                  {question.required ? (
-                    <span className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-2 py-1 text-xs text-kognis-teal">
-                      Obrigatoria
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {surveyQuestionTypeLabels[question.type]}
-                  {question.options.length > 0 ? ` - ${question.options.join(", ")}` : ""}
-                </p>
-                {question.description ? (
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{question.description}</p>
-                ) : null}
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-                <Button
-                  className="w-full sm:w-auto"
-                  variant="secondary"
-                  onClick={() => moveQuestion(index, "up")}
-                  disabled={isLoading || index === 0}
-                >
-                  <ArrowUp className="h-4 w-4" />
-                  Subir
-                </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  variant="secondary"
-                  onClick={() => moveQuestion(index, "down")}
-                  disabled={isLoading || index === questions.length - 1}
-                >
-                  <ArrowDown className="h-4 w-4" />
-                  Descer
-                </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  variant="secondary"
-                  onClick={() => startEdit(question)}
-                  disabled={isLoading}
-                >
-                  <Edit3 className="h-4 w-4" />
-                  Editar
-                </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  variant="secondary"
-                  onClick={() => removeQuestion(question)}
-                  disabled={isLoading}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Excluir
-                </Button>
-              </div>
-            </div>
+              question={question}
+              index={index}
+              totalQuestions={questions.length}
+              isLoading={isLoading}
+              onEdit={() => startEdit(question)}
+              onMoveUp={() => moveQuestion(index, "up")}
+              onMoveDown={() => moveQuestion(index, "down")}
+              onRemove={() => removeQuestion(question)}
+            />
           ))}
+        </div>
+
+        <div className="rounded-md border border-border bg-surface-muted p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-success">
+                <CheckCircle2 className="h-4 w-4" />
+                Configuração da pesquisa
+              </div>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Quando terminar as perguntas, visualize a experiência do cliente ou volte para gerar QR Code e link público.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
+              <Button className="w-full sm:w-auto" variant="secondary" asChild>
+                <Link href={`/pesquisas/${surveyId}/preview`} target="_blank">
+                  <ExternalLink className="h-4 w-4" />
+                  Preview
+                </Link>
+              </Button>
+              <Button className="w-full sm:w-auto" variant="secondary" onClick={onClose} disabled={isLoading}>
+                <X className="h-4 w-4" />
+                Concluir
+              </Button>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function QuestionItem({
+  question,
+  index,
+  totalQuestions,
+  isLoading,
+  onEdit,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: {
+  question: SurveyQuestion;
+  index: number;
+  totalQuestions: number;
+  isLoading: boolean;
+  onEdit: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-surface-muted p-3 md:p-4">
+      <div className="grid grid-cols-[1fr_auto] gap-3">
+        <div className="min-w-0">
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 text-xs font-medium text-muted-foreground">{index + 1}</span>
+            <div className="min-w-0">
+              <h3 className="line-clamp-2 text-base font-semibold leading-6 text-text-primary">
+                {question.title}
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {surveyQuestionTypeLabels[question.type]}
+                {question.options.length > 0 ? ` - ${question.options.join(", ")}` : ""}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {question.required ? (
+              <span className="rounded-md border border-brand/20 bg-brand-soft px-2 py-1 text-xs text-brand">
+                Obrigatória
+              </span>
+            ) : null}
+            {question.description ? (
+              <span className="text-xs text-muted-foreground">Com descrição</span>
+            ) : null}
+          </div>
+          {question.description ? (
+            <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+              {question.description}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex items-start gap-2">
+          <Button size="sm" variant="secondary" onClick={onEdit} disabled={isLoading}>
+            <Edit3 className="h-4 w-4" />
+            Editar
+          </Button>
+          <details className="relative">
+            <summary className="inline-flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md border border-border bg-surface text-text-primary shadow-subtle transition-colors hover:bg-surface-muted [&::-webkit-details-marker]:hidden">
+              <MoreVertical className="h-4 w-4" />
+              <span className="sr-only">Mais ações da pergunta</span>
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 grid w-56 gap-2 rounded-md border border-border bg-surface p-2 shadow-floating">
+              <Button
+                className="justify-start"
+                variant="ghost"
+                onClick={onMoveUp}
+                disabled={isLoading || index === 0}
+              >
+                <ArrowUp className="h-4 w-4" />
+                Mover para cima
+              </Button>
+              <Button
+                className="justify-start"
+                variant="ghost"
+                onClick={onMoveDown}
+                disabled={isLoading || index === totalQuestions - 1}
+              >
+                <ArrowDown className="h-4 w-4" />
+                Mover para baixo
+              </Button>
+              <Button className="justify-start" variant="ghost" onClick={onRemove} disabled={isLoading}>
+                <Trash2 className="h-4 w-4" />
+                Excluir
+              </Button>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
   );
 }
 

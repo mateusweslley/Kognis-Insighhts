@@ -15,7 +15,7 @@ export function PanelPage({
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-3xl font-semibold text-white">{title}</h1>
+          <h1 className="text-3xl font-semibold text-text-primary">{title}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             {description}
           </p>

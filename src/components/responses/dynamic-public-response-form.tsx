@@ -90,7 +90,7 @@ export function DynamicPublicResponseForm({
         <CardTitle>{isPreview ? "Preview da pesquisa" : "Responder pesquisa"}</CardTitle>
         <CardDescription>
           {isPreview
-            ? "Visualizacao administrativa. Nenhuma resposta sera salva."
+            ? "Visualização administrativa. Nenhuma resposta será salva."
             : "Responda as perguntas abaixo. Campos obrigatorios precisam ser preenchidos."}
         </CardDescription>
       </CardHeader>
@@ -101,7 +101,7 @@ export function DynamicPublicResponseForm({
               <div className="space-y-1">
                 <Label htmlFor={`question-${question.id}`}>
                   {question.title}
-                  {question.required ? <span className="text-kognis-teal"> *</span> : null}
+                  {question.required ? <span className="text-brand"> *</span> : null}
                 </Label>
                 {question.description ? (
                   <p className="text-sm leading-6 text-muted-foreground">{question.description}</p>
@@ -122,8 +122,8 @@ export function DynamicPublicResponseForm({
           ) : null}
 
           {isPreview ? (
-            <p className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-3 py-2 text-sm text-white">
-              Preview administrativo: o envio de respostas esta desativado.
+            <p className="rounded-md border border-success/20 bg-success-soft px-3 py-2 text-sm text-success">
+              Preview administrativo: o envio de respostas está desativado.
             </p>
           ) : (
             <Button className="w-full" type="submit" disabled={isLoading}>
@@ -151,7 +151,7 @@ function QuestionField({
         id={`question-${question.id}`}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-28 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
+        className="min-h-28 w-full rounded-md border border-input bg-surface px-3 py-2 text-base text-text-primary outline-none transition-colors placeholder:text-text-muted focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
       />
     );
   }
@@ -162,7 +162,7 @@ function QuestionField({
         {question.options.map((option) => (
           <label
             key={option}
-            className="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.035] px-3 py-3 text-sm text-white"
+            className="flex items-center gap-3 rounded-md border border-border bg-surface-muted px-3 py-3 text-sm text-text-primary"
           >
             <input
               type="radio"
@@ -190,8 +190,8 @@ function QuestionField({
               key={rating}
               className={`flex h-11 items-center justify-center rounded-md border text-sm font-semibold transition-colors ${
                 value === ratingValue
-                  ? "border-kognis-teal bg-kognis-teal/15 text-white"
-                  : "border-white/10 bg-white/[0.035] text-muted-foreground"
+                  ? "border-brand bg-brand-soft text-text-primary"
+                  : "border-border bg-surface-muted text-text-secondary"
               }`}
             >
               <input
@@ -229,7 +229,7 @@ function validateAnswers(questions: SurveyQuestion[], values: FormValues) {
     if (question.required && !value) {
       return {
         answers,
-        error: `Responda a pergunta obrigatoria: ${question.title}.`,
+        error: `Responda a pergunta obrigatória: ${question.title}.`,
       };
     }
 
@@ -241,7 +241,7 @@ function validateAnswers(questions: SurveyQuestion[], values: FormValues) {
       if (!question.options.includes(value)) {
         return {
           answers,
-          error: `Escolha uma opcao valida para: ${question.title}.`,
+          error: `Escolha uma opção válida para: ${question.title}.`,
         };
       }
 
@@ -276,8 +276,8 @@ function getFriendlyDynamicResponseError(message: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (normalizedMessage.includes("row-level security") || normalizedMessage.includes("permission")) {
-    return "Esta pesquisa nao esta aceitando respostas no momento.";
+    return "Esta pesquisa não está aceitando respostas no momento.";
   }
 
-  return "Nao foi possivel enviar sua resposta agora. Tente novamente.";
+  return "Não foi possível enviar sua resposta agora. Tente novamente.";
 }

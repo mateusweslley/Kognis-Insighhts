@@ -76,7 +76,7 @@ export function AuthCard({ mode }: AuthCardProps) {
   return (
     <main className="grid min-h-screen place-items-center px-6 py-10">
       <div className="w-full max-w-md">
-        <Link href="/dashboard" className="mb-8 flex justify-center" aria-label="Ir para o dashboard">
+        <Link href="/" className="mb-8 flex justify-center" aria-label="Ir para o início">
           <BrandMark />
         </Link>
         <Card>
@@ -85,18 +85,12 @@ export function AuthCard({ mode }: AuthCardProps) {
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {isSignup ? (
-                <div className="space-y-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Input id="company" placeholder="Nome da marca" />
-                </div>
-              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="voce@empresa.com"
+                  placeholder="contato@empresa.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
@@ -125,7 +119,7 @@ export function AuthCard({ mode }: AuthCardProps) {
                 </p>
               ) : null}
               <Button className="w-full" type="submit" disabled={isLoading}>
-                {isLoading ? "Aguarde..." : isSignup ? "Começar agora" : "Entrar"}
+                {isLoading ? "Aguarde..." : isSignup ? "Criar conta" : "Entrar"}
               </Button>
             </form>
             <p className="mt-5 text-center text-sm text-muted-foreground">

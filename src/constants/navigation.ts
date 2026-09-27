@@ -18,14 +18,14 @@ export const panelNavigation = [
     icon: ClipboardList,
   },
   {
-    title: "Campanhas",
-    href: "/campanhas",
-    icon: QrCode,
-  },
-  {
     title: "Respostas",
     href: "/respostas",
     icon: MessageSquareText,
+  },
+  {
+    title: "Campanhas",
+    href: "/campanhas",
+    icon: QrCode,
   },
   {
     title: "Configurações",

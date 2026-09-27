@@ -45,7 +45,7 @@ export function PublicResponseForm({ surveyId, isPreview = false }: PublicRespon
     }
 
     if (!parsedRating || parsedRating < 1 || parsedRating > 5) {
-      setError("Escolha uma nota de satisfacao de 1 a 5.");
+      setError("Escolha uma nota de satisfação de 1 a 5.");
       setIsLoading(false);
       return;
     }
@@ -99,7 +99,7 @@ export function PublicResponseForm({ surveyId, isPreview = false }: PublicRespon
         <CardTitle>{isPreview ? "Preview da pesquisa" : "Responder pesquisa"}</CardTitle>
         <CardDescription>
           {isPreview
-            ? "Visualizacao administrativa. Nenhuma resposta sera salva."
+            ? "Visualização administrativa. Nenhuma resposta será salva."
             : "Leva menos de um minuto. Seus dados ajudam a empresa a melhorar a experiencia."}
         </CardDescription>
       </CardHeader>
@@ -122,36 +122,36 @@ export function PublicResponseForm({ surveyId, isPreview = false }: PublicRespon
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="voce@email.com"
+              placeholder="contato@empresa.com"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="response-rating">Nota de satisfacao</Label>
+            <Label htmlFor="response-rating">Nota de satisfação</Label>
             <select
               id="response-rating"
               value={rating}
               onChange={(event) => setRating(event.target.value)}
-              className="flex h-11 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-surface px-3 py-2 text-base text-text-primary outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
               required
             >
-              <option value="" className="bg-kognis-cyber text-white">
+              <option value="" className="bg-surface text-text-primary">
                 Escolha uma nota
               </option>
               {[1, 2, 3, 4, 5].map((value) => (
-                <option key={value} value={value} className="bg-kognis-cyber text-white">
+                <option key={value} value={value} className="bg-surface text-text-primary">
                   {value}
                 </option>
               ))}
             </select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="response-comment">Comentario</Label>
+            <Label htmlFor="response-comment">Comentário</Label>
             <textarea
               id="response-comment"
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="Conte sua experiencia"
-              className="min-h-28 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
+              className="min-h-28 w-full rounded-md border border-input bg-surface px-3 py-2 text-base text-text-primary outline-none transition-colors placeholder:text-text-muted focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
             />
           </div>
           {error ? (
@@ -160,8 +160,8 @@ export function PublicResponseForm({ surveyId, isPreview = false }: PublicRespon
             </p>
           ) : null}
           {isPreview ? (
-            <p className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-3 py-2 text-sm text-white">
-              Preview administrativo: o envio de respostas esta desativado.
+            <p className="rounded-md border border-success/20 bg-success-soft px-3 py-2 text-sm text-success">
+              Preview administrativo: o envio de respostas está desativado.
             </p>
           ) : (
             <Button className="w-full" type="submit" disabled={isLoading}>
@@ -178,8 +178,8 @@ function getFriendlyPublicResponseError(message: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (normalizedMessage.includes("row-level security") || normalizedMessage.includes("permission")) {
-    return "Esta pesquisa nao esta aceitando respostas no momento.";
+    return "Esta pesquisa não está aceitando respostas no momento.";
   }
 
-  return "Nao foi possivel enviar sua resposta agora. Tente novamente.";
+  return "Não foi possível enviar sua resposta agora. Tente novamente.";
 }

@@ -1,5 +1,6 @@
 import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer } from "@/components/layout/page-container";
 import { getCampaignStats } from "@/lib/campaigns";
 import { requireCurrentCompany } from "@/lib/company";
 import { getResponseStats } from "@/lib/responses";
@@ -19,12 +20,14 @@ export default async function DashboardPage() {
 
   return (
     <AppShell>
-      <DashboardOverview
-        surveys={surveys}
-        totalResponses={totalResponses}
-        totalCampaigns={totalCampaigns}
-        error={error ?? responsesError ?? campaignsError}
-      />
+      <PageContainer size="wide">
+        <DashboardOverview
+          surveys={surveys}
+          totalResponses={totalResponses}
+          totalCampaigns={totalCampaigns}
+          error={error ?? responsesError ?? campaignsError}
+        />
+      </PageContainer>
     </AppShell>
   );
 }

@@ -2,3 +2,8 @@ export * from "./button";
 export * from "./card";
 export * from "./input";
 export * from "./label";
+export * from "./textarea";
+export * from "./select";
+export * from "./badge";
+export * from "./status-badge";
+export * from "./feedback-banner";

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { DynamicPublicResponseForm } from "@/components/responses/dynamic-public-response-form";
 import { PublicResponseForm } from "@/components/responses/public-response-form";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,28 +30,26 @@ export default async function SurveyPreviewPage({ params }: SurveyPreviewPagePro
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl space-y-6">
-        <div>
-          <p className="text-sm font-medium text-kognis-teal">Preview administrativo</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">{survey.title}</h1>
-          {survey.description ? (
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{survey.description}</p>
-          ) : null}
-        </div>
+      <PageContainer size="narrow">
+        <PageHeader
+          eyebrow="Preview administrativo"
+          title={survey.title}
+          description={survey.description ?? "Visualize como esta pesquisa será exibida para o cliente."}
+        />
 
         <Card>
           <CardContent className="space-y-3 p-5">
             <p className="text-sm text-muted-foreground">
-              Este preview e visivel apenas no painel administrativo e nao salva respostas.
+              Este preview é visível apenas no painel administrativo e não salva respostas.
             </p>
             <p className="text-sm text-muted-foreground">
-              Status atual: <span className="text-white">{surveyStatusLabels[survey.status]}</span>
+              Status atual: <span className="text-text-primary">{surveyStatusLabels[survey.status]}</span>
             </p>
           </CardContent>
         </Card>
 
         {error ? (
-          <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+          <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
             {error}
           </p>
         ) : null}
@@ -59,7 +59,7 @@ export default async function SurveyPreviewPage({ params }: SurveyPreviewPagePro
         ) : (
           <PublicResponseForm surveyId={survey.id} isPreview />
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

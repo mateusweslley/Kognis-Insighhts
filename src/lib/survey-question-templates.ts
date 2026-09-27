@@ -24,7 +24,7 @@ export const surveyQuestionTemplates: SurveyQuestionTemplate[] = [
       {
         title: "Sexo",
         type: "single_choice",
-        options: ["Feminino", "Masculino", "Prefiro nao informar"],
+        options: ["Feminino", "Masculino", "Prefiro não informar"],
       },
       {
         title: "Faixa etaria",
@@ -56,12 +56,12 @@ export const surveyQuestionTemplates: SurveyQuestionTemplate[] = [
         type: "rating",
       },
       {
-        title: "Voce compraria novamente?",
+        title: "Você compraria novamente?",
         type: "single_choice",
-        options: ["Sim", "Nao", "Talvez"],
+        options: ["Sim", "Não", "Talvez"],
       },
       {
-        title: "Comentario",
+        title: "Comentário",
         type: "long_text",
       },
     ],

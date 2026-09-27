@@ -36,7 +36,7 @@ export function SurveyQrCode({
       setFeedback("Link copiado com sucesso.");
     } catch (copyError) {
       console.error("Erro ao copiar link da pesquisa:", copyError);
-      setFeedback("Nao foi possivel copiar automaticamente. Copie o link exibido.");
+      setFeedback("Não foi possível copiar automaticamente. Copie o link exibido.");
     }
   }
 
@@ -44,7 +44,7 @@ export function SurveyQrCode({
     const canvas = canvasRef.current;
 
     if (!canvas) {
-      setFeedback("Nao foi possivel gerar o PNG agora. Tente novamente.");
+      setFeedback("Não foi possível gerar o PNG agora. Tente novamente.");
       return;
     }
 
@@ -61,7 +61,7 @@ export function SurveyQrCode({
         <div>
           <CardTitle>QR Code da pesquisa</CardTitle>
           <CardDescription>
-            Compartilhe o link publico desta pesquisa com consumidores finais.
+            Compartilhe o link público desta pesquisa com consumidores finais.
           </CardDescription>
         </div>
         {onClose ? (
@@ -71,7 +71,7 @@ export function SurveyQrCode({
         ) : null}
       </CardHeader>
       <CardContent className="grid gap-5 md:grid-cols-[auto_1fr] md:items-center">
-        <div className="flex justify-center rounded-md border border-white/10 bg-white p-4">
+        <div className="flex justify-center rounded-md border border-border bg-white p-4">
           <QRCodeCanvas
             ref={canvasRef}
             value={publicUrl}
@@ -87,16 +87,22 @@ export function SurveyQrCode({
         <div className="min-w-0 space-y-4">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Link publico
+              Link público
             </p>
-            <p className="mt-2 break-all rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-sm text-white">
+            <p className="mt-2 break-all rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-text-primary">
               {publicUrl}
             </p>
           </div>
 
-          <div className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-muted-foreground">
-            Status: <span className="text-white">{surveyStatusLabels[surveyStatus]}</span>
+          <div className="rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-text-secondary">
+            Status: <span className="text-text-primary">{surveyStatusLabels[surveyStatus]}</span>
           </div>
+
+          {surveyStatus !== "active" ? (
+            <p className="rounded-md border border-yellow-400/30 bg-yellow-400/10 px-3 py-2 text-sm text-yellow-100">
+              Esta pesquisa não está recebendo respostas públicas no momento.
+            </p>
+          ) : null}
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button type="button" className="w-full sm:w-auto" onClick={copyLink}>
@@ -115,7 +121,7 @@ export function SurveyQrCode({
           </div>
 
           {feedback ? (
-            <p className="flex items-center gap-2 text-sm text-kognis-teal">
+            <p className="flex items-center gap-2 text-sm text-success">
               <Check className="h-4 w-4" />
               {feedback}
             </p>

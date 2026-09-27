@@ -128,7 +128,7 @@ function normalizeLegacyFields(answers: Exclude<ResponseAnswers, { mode: "dynami
       position: 3,
     },
     {
-      label: "Comentario",
+      label: "Comentário",
       value: answers.comment ?? null,
       type: "long_text",
       position: 4,

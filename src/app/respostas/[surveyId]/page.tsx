@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer } from "@/components/layout/page-container";
 import { SurveyResponsesPanel } from "@/components/responses/survey-responses-panel";
 import { requireCurrentCompany } from "@/lib/company";
 import { normalizeResponses } from "@/lib/response-normalizer";
@@ -31,11 +32,13 @@ export default async function SurveyResponsesPage({ params }: SurveyResponsesPag
 
   return (
     <AppShell>
-      <SurveyResponsesPanel
-        survey={survey}
-        responses={normalizedResponses}
-        error={responsesError ?? questionsError ?? surveysError}
-      />
+      <PageContainer size="wide">
+        <SurveyResponsesPanel
+          survey={survey}
+          responses={normalizedResponses}
+          error={responsesError ?? questionsError ?? surveysError}
+        />
+      </PageContainer>
     </AppShell>
   );
 }

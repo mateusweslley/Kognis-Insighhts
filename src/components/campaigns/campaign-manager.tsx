@@ -4,12 +4,15 @@ import { Archive, Edit3, Plus, Save, X } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { isValidCampaignStatus } from "@/lib/campaign-utils";
+import { createClient } from "@/lib/supabase/client";
 import type { CampaignStatus, CampaignWithSurvey } from "@/types/campaign";
 import { campaignStatusLabels, campaignStatuses } from "@/types/campaign";
 import type { Survey } from "@/types/survey";
@@ -104,7 +107,7 @@ export function CampaignManager({
     }
 
     if (!isValidCampaignStatus(form.status)) {
-      setError("Escolha um status valido para a campanha.");
+      setError("Escolha um status válido para a campanha.");
       setIsLoading(false);
       return;
     }
@@ -188,26 +191,24 @@ export function CampaignManager({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Campanhas</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Organize contextos de coleta e vincule campanhas a pesquisas existentes.
-          </p>
-        </div>
-        <Button className="w-full sm:w-auto" onClick={startCreate} disabled={isLoading}>
-          <Plus className="h-4 w-4" />
-          Criar Campanha
-        </Button>
-      </div>
+      <PageHeader
+        title="Campanhas"
+        description="Organize iniciativas e coletas relacionadas às suas pesquisas."
+        actions={
+          <Button className="w-full sm:w-auto" onClick={startCreate} disabled={isLoading}>
+            <Plus className="h-4 w-4" />
+            Criar campanha
+          </Button>
+        }
+      />
 
       {message ? (
-        <p className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-3 py-2 text-sm text-white">
+        <p className="rounded-md border border-success/20 bg-success-soft px-3 py-2 text-sm text-success">
           {message}
         </p>
       ) : null}
       {error ? (
-        <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+        <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -217,7 +218,7 @@ export function CampaignManager({
           <CardHeader>
             <CardTitle>{editingCampaign ? "Editar campanha" : "Nova campanha"}</CardTitle>
             <CardDescription>
-              Defina nome, descricao e a pesquisa vinculada a esta coleta.
+              Defina nome, descrição e a pesquisa vinculada a esta coleta.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -236,41 +237,37 @@ export function CampaignManager({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="campaign-description">Descricao</Label>
-                <textarea
+                <Label htmlFor="campaign-description">Descrição</Label>
+                <Textarea
                   id="campaign-description"
                   value={form.description}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, description: event.target.value }))
                   }
                   placeholder="Contexto da campanha"
-                  className="min-h-28 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
                 />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="campaign-survey">Pesquisa vinculada</Label>
-                  <select
+                  <Select
                     id="campaign-survey"
                     value={form.surveyId}
                     onChange={(event) =>
                       setForm((current) => ({ ...current, surveyId: event.target.value }))
                     }
-                    className="flex h-11 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
                   >
-                    <option value="" className="bg-kognis-cyber text-white">
-                      Sem pesquisa vinculada
-                    </option>
+                    <option value="">Sem pesquisa vinculada</option>
                     {surveys.map((survey) => (
-                      <option key={survey.id} value={survey.id} className="bg-kognis-cyber text-white">
+                      <option key={survey.id} value={survey.id}>
                         {survey.title}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="campaign-status">Status</Label>
-                  <select
+                  <Select
                     id="campaign-status"
                     value={form.status}
                     onChange={(event) =>
@@ -279,20 +276,19 @@ export function CampaignManager({
                         status: event.target.value as CampaignStatus,
                       }))
                     }
-                    className="flex h-11 w-full rounded-md border border-white/10 bg-white/[0.055] px-3 py-2 text-base text-white outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 md:text-sm"
                   >
                     {campaignStatuses.map((status) => (
-                      <option key={status} value={status} className="bg-kognis-cyber text-white">
+                      <option key={status} value={status}>
                         {campaignStatusLabels[status]}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button className="w-full sm:w-auto" type="submit" disabled={isLoading}>
                   <Save className="h-4 w-4" />
-                  {isLoading ? "Salvando..." : editingCampaign ? "Salvar alteracoes" : "Criar campanha"}
+                  {isLoading ? "Salvando..." : editingCampaign ? "Salvar alterações" : "Criar campanha"}
                 </Button>
                 <Button
                   className="w-full sm:w-auto"
@@ -314,7 +310,7 @@ export function CampaignManager({
         <EmptyState
           title="Você ainda não criou nenhuma campanha."
           description="Crie uma campanha para organizar o contexto de coleta das suas pesquisas."
-          actionLabel="Criar Campanha"
+          actionLabel="Criar campanha"
           onAction={startCreate}
         />
       ) : null}
@@ -326,8 +322,8 @@ export function CampaignManager({
               <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-lg font-semibold text-white">{campaign.name}</h2>
-                    <span className="rounded-md border border-white/10 bg-white/[0.055] px-2 py-1 text-xs font-medium text-muted-foreground">
+                    <h2 className="truncate text-lg font-semibold text-text-primary">{campaign.name}</h2>
+                    <span className="rounded-md border border-border bg-surface-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                       {campaignStatusLabels[campaign.status]}
                     </span>
                   </div>
@@ -387,14 +383,14 @@ function getFriendlyCampaignError(message: string, code?: string) {
   }
 
   if (normalizedMessage.includes("permission") || normalizedMessage.includes("row-level security")) {
-    return "Voce nao tem permissao para alterar esta campanha.";
+    return "Você não tem permissão para alterar esta campanha.";
   }
 
   if (normalizedMessage.includes("failed to fetch") || normalizedMessage.includes("network")) {
-    return "Nao foi possivel conectar ao Supabase. Verifique sua conexao e tente novamente.";
+    return "Não foi possível conectar ao Supabase. Verifique sua conexão e tente novamente.";
   }
 
-  return "Nao foi possivel salvar a campanha agora. Tente novamente.";
+  return "Não foi possível salvar a campanha agora. Tente novamente.";
 }
 
 function formatDate(date: string) {

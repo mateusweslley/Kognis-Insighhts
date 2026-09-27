@@ -1,5 +1,7 @@
 import { CompanyForm } from "@/components/company/company-form";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireCurrentCompany } from "@/lib/company";
 
@@ -8,25 +10,23 @@ export default async function ConfiguracoesPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Configuracoes</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Gerencie os dados basicos da empresa vinculada a sua conta.
-          </p>
-        </div>
+      <PageContainer size="wide">
+        <PageHeader
+          title="Configurações"
+          description="Gerencie os dados básicos da empresa vinculada à sua conta."
+        />
         <Card>
           <CardHeader>
             <CardTitle>Empresa</CardTitle>
             <CardDescription>
-              Atualize nome, segmento e URL da logo. O upload de imagem fica para uma sprint futura.
+              Atualize nome, segmento e uma URL pública da logo, se desejar.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <CompanyForm mode="edit" company={company} />
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

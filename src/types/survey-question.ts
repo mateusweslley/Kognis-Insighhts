@@ -39,6 +39,6 @@ export type SurveyQuestionUpdate = {
 export const surveyQuestionTypeLabels: Record<SurveyQuestionType, string> = {
   short_text: "Texto curto",
   long_text: "Texto longo",
-  single_choice: "Escolha unica",
+  single_choice: "Escolha única",
   rating: "Nota de 1 a 5",
 };

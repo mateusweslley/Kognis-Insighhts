@@ -1,5 +1,6 @@
 import { CampaignManager } from "@/components/campaigns/campaign-manager";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageContainer } from "@/components/layout/page-container";
 import { getCampaignsByCompany } from "@/lib/campaigns";
 import { requireCurrentCompany } from "@/lib/company";
 import { getCompanySurveys } from "@/lib/surveys";
@@ -11,14 +12,14 @@ export default async function CampanhasPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-6xl">
+      <PageContainer size="wide">
         <CampaignManager
           companyId={company.id}
           initialCampaigns={campaigns}
           surveys={surveys}
           initialError={campaignsError ?? surveysError}
         />
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

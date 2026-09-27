@@ -25,7 +25,7 @@ export function EmptyState({
     <Card>
       <CardContent className="flex min-h-[280px] flex-col items-center justify-center p-8 text-center">
         <ActionIcon actionHref={actionHref} onAction={onAction} />
-        <h2 className="mt-5 text-xl font-semibold text-white">{title}</h2>
+        <h2 className="mt-5 text-xl font-semibold text-text-primary">{title}</h2>
         <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
           {description}
         </p>
@@ -51,7 +51,7 @@ function ActionIcon({
   onAction?: () => void;
 }) {
   const className =
-    "grid h-12 w-12 place-items-center rounded-lg border border-kognis-teal/30 bg-kognis-teal/10 text-kognis-teal transition-colors hover:bg-kognis-teal/15";
+    "grid h-12 w-12 place-items-center rounded-lg border border-brand/20 bg-brand-soft text-brand transition-colors hover:bg-brand-soft/80";
 
   if (actionHref) {
     return (

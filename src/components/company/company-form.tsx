@@ -50,7 +50,7 @@ export function CompanyForm({ mode, company }: CompanyFormProps) {
     }
 
     if (segment && !isValidCompanySegment(segment)) {
-      setError("Escolha um segmento valido.");
+      setError("Escolha um segmento válido.");
       setIsLoading(false);
       return;
     }
@@ -62,7 +62,7 @@ export function CompanyForm({ mode, company }: CompanyFormProps) {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      setError("Sua sessao expirou. Entre novamente para continuar.");
+      setError("Sua sessão expirou. Entre novamente para continuar.");
       setIsLoading(false);
       router.push("/login");
       return;
@@ -162,7 +162,7 @@ export function CompanyForm({ mode, company }: CompanyFormProps) {
         </p>
       ) : null}
       <Button className="w-full sm:w-auto" type="submit" disabled={isLoading}>
-        {isLoading ? "Salvando..." : mode === "create" ? "Criar empresa" : "Salvar alteracoes"}
+        {isLoading ? "Salvando..." : mode === "create" ? "Criar empresa" : "Salvar alterações"}
       </Button>
     </form>
   );
@@ -204,7 +204,7 @@ async function createCompanyWithAvailableSlug({
     return { error: getFriendlyCompanyError(error.message, error.code) };
   }
 
-  return { error: "Ja existe uma empresa com um slug muito parecido. Ajuste o nome e tente novamente." };
+  return { error: "Já existe uma empresa com um slug muito parecido. Ajuste o nome e tente novamente." };
 }
 
 async function updateCompanyWithAvailableSlug({
@@ -221,7 +221,7 @@ async function updateCompanyWithAvailableSlug({
   logoUrl: string | null;
 }) {
   if (!companyId) {
-    return { error: "Empresa nao encontrada para edicao." };
+    return { error: "Empresa não encontrada para edição." };
   }
 
   const supabase = createClient();
@@ -249,27 +249,27 @@ async function updateCompanyWithAvailableSlug({
     return { error: getFriendlyCompanyError(error.message, error.code) };
   }
 
-  return { error: "Ja existe uma empresa com um slug muito parecido. Ajuste o nome e tente novamente." };
+  return { error: "Já existe uma empresa com um slug muito parecido. Ajuste o nome e tente novamente." };
 }
 
 function getFriendlyCompanyError(message: string, code?: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (code === "23505" && normalizedMessage.includes("owner_id")) {
-    return "Esta conta ja possui uma empresa cadastrada.";
+    return "Esta conta já possui uma empresa cadastrada.";
   }
 
   if (code === "23505" && normalizedMessage.includes("slug")) {
-    return "Ja existe uma empresa com este identificador. Ajuste o nome e tente novamente.";
+    return "Já existe uma empresa com este identificador. Ajuste o nome e tente novamente.";
   }
 
   if (normalizedMessage.includes("permission") || normalizedMessage.includes("row-level security")) {
-    return "Voce nao tem permissao para alterar esta empresa.";
+    return "Você não tem permissão para alterar esta empresa.";
   }
 
   if (normalizedMessage.includes("failed to fetch") || normalizedMessage.includes("network")) {
-    return "Nao foi possivel conectar ao Supabase. Verifique sua conexao e tente novamente.";
+    return "Não foi possível conectar ao Supabase. Verifique sua conexão e tente novamente.";
   }
 
-  return "Nao foi possivel salvar a empresa agora. Tente novamente.";
+  return "Não foi possível salvar a empresa agora. Tente novamente.";
 }

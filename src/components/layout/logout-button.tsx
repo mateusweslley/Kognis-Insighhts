@@ -4,10 +4,12 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
-export function LogoutButton() {
+type LogoutButtonProps = Omit<ButtonProps, "onClick" | "disabled">;
+
+export function LogoutButton({ className, variant = "secondary", ...props }: LogoutButtonProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,7 +24,13 @@ export function LogoutButton() {
   }
 
   return (
-    <Button variant="secondary" onClick={handleLogout} disabled={isLoading}>
+    <Button
+      className={className}
+      variant={variant}
+      onClick={handleLogout}
+      disabled={isLoading}
+      {...props}
+    >
       <LogOut className="h-4 w-4" />
       {isLoading ? "Saindo..." : "Sair"}
     </Button>

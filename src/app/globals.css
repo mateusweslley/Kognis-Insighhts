@@ -3,22 +3,70 @@
 @tailwind utilities;
 
 :root {
-  --background: 224 73% 10%;
-  --foreground: 0 0% 100%;
-  --card: 225 68% 14%;
-  --card-foreground: 0 0% 100%;
-  --primary: 175 85% 45%;
-  --primary-foreground: 224 73% 10%;
-  --secondary: 224 57% 18%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 224 42% 18%;
-  --muted-foreground: 220 13% 82%;
-  --accent: 175 85% 45%;
-  --accent-foreground: 224 73% 10%;
-  --border: 224 33% 24%;
-  --input: 224 33% 24%;
-  --ring: 175 85% 45%;
-  --radius: 0.5rem;
+  --background: 260 33% 98%;
+  --background-muted: 255 24% 95%;
+  --foreground: 224 18% 15%;
+
+  --surface: 0 0% 100%;
+  --surface-muted: 255 28% 97%;
+  --surface-elevated: 0 0% 100%;
+
+  --text-primary: 224 18% 15%;
+  --text-secondary: 225 11% 34%;
+  --text-muted: 225 9% 51%;
+
+  --border: 255 18% 88%;
+  --border-strong: 255 18% 78%;
+  --input: 255 18% 88%;
+  --ring: 262 83% 58%;
+
+  --brand: 262 83% 58%;
+  --brand-soft: 261 86% 95%;
+  --brand-foreground: 0 0% 100%;
+
+  --success: 158 64% 39%;
+  --success-soft: 151 81% 96%;
+  --warning: 36 92% 50%;
+  --warning-soft: 48 100% 96%;
+  --danger: 0 72% 51%;
+  --danger-soft: 0 86% 97%;
+  --info: 217 91% 60%;
+  --info-soft: 214 100% 97%;
+
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--background-muted);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--brand);
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-pill: 999px;
+  --radius: var(--radius-md);
+
+  --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 18px 45px rgba(30, 24, 60, 0.08);
+  --shadow-floating: 0 28px 80px rgba(30, 24, 60, 0.16);
+
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --legacy-cyber: 224 73% 10%;
+  --legacy-deep: 226 68% 13%;
+  --legacy-teal: 175 85% 45%;
+  --legacy-mist: 220 13% 91%;
 }
 
 * {
@@ -27,12 +75,14 @@
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(18, 214, 197, 0.16), transparent 34rem),
-    linear-gradient(135deg, #07122e 0%, #0b1739 52%, #07122e 100%);
-  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  color: hsl(var(--text-primary));
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: rgba(18, 214, 197, 0.32);
+  background: hsl(var(--brand-soft));
+  color: hsl(var(--brand));
 }

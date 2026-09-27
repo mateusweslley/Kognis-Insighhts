@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,18 +35,14 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
   }, [searchTerm, surveys]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Respostas</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Abra uma pesquisa para visualizar quem respondeu, quando respondeu e o que respondeu.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-7">
+      <PageHeader
+        title="Respostas"
+        description="Acompanhe as respostas recebidas pelas suas pesquisas."
+      />
 
       {error ? (
-        <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+        <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -53,16 +50,16 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
       {surveys.length === 0 ? (
         <EmptyState
           title="Nenhuma pesquisa criada ainda."
-          description="Crie uma pesquisa para comecar a coletar respostas dos consumidores."
+          description="Crie uma pesquisa para começar a coletar respostas dos consumidores."
           actionLabel="Ver pesquisas"
           actionHref="/pesquisas"
         />
       ) : null}
 
       {surveys.length > 0 && totalResponses === 0 ? (
-        <p className="rounded-md border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
-          Nenhuma resposta recebida ainda. As respostas aparecerao aqui quando consumidores
-          acessarem os links publicos ou QR Codes das pesquisas ativas.
+        <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-text-secondary shadow-subtle">
+          Nenhuma resposta recebida ainda. As respostas aparecerão aqui quando consumidores
+          acessarem os links públicos ou QR Codes das pesquisas ativas.
         </p>
       ) : null}
 
@@ -79,7 +76,7 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
       ) : null}
 
       {surveys.length > 0 && filteredSurveys.length === 0 ? (
-        <p className="rounded-md border border-white/10 bg-white/[0.035] px-4 py-3 text-sm text-muted-foreground">
+        <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-text-secondary shadow-subtle">
           Nenhuma pesquisa encontrada para a busca atual.
         </p>
       ) : null}
@@ -89,13 +86,13 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
           <Card key={survey.id}>
             <CardContent className="flex h-full flex-col gap-5 p-5">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-muted-foreground">{survey.title}</p>
+                <p className="truncate text-sm font-semibold text-text-primary">{survey.title}</p>
                 <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-                  {survey.description || "Sem descricao."}
+                  {survey.description || "Sem descrição."}
                 </p>
               </div>
               <div>
-                <p className="text-3xl font-semibold text-white">
+                <p className="text-3xl font-semibold text-text-primary">
                   {responseCounts[survey.id] ?? 0}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">respostas</p>

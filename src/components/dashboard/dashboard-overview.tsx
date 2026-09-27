@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Survey, SurveyStatus } from "@/types/survey";
@@ -27,18 +28,12 @@ export function DashboardOverview({
 
   if (totalSurveys === 0) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Dashboard</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Acompanhe os principais sinais das pesquisas e campanhas da sua marca.
-          </p>
-        </div>
-        {error ? (
-          <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-            {error}
-          </p>
-        ) : null}
+      <div className="space-y-7">
+        <PageHeader
+          title="Visão geral"
+          description="Acompanhe os principais sinais das pesquisas e campanhas da sua marca."
+        />
+        {error ? <ErrorMessage>{error}</ErrorMessage> : null}
         <EmptyState
           title="Dashboard aguardando respostas."
           description="Quando consumidores responderem suas pesquisas, os indicadores principais aparecerão aqui."
@@ -50,31 +45,25 @@ export function DashboardOverview({
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Dashboard</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Você já possui pesquisas cadastradas. As métricas aparecerão quando consumidores começarem a responder.
-          </p>
-        </div>
-        <Button asChild className="w-full sm:w-auto">
-          <Link href="/pesquisas">Ver pesquisas</Link>
-        </Button>
-      </div>
+    <div className="space-y-7">
+      <PageHeader
+        title="Visão geral"
+        description="Você já possui pesquisas cadastradas. As métricas aparecerão quando consumidores começarem a responder."
+        actions={
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/pesquisas">Ver pesquisas</Link>
+          </Button>
+        }
+      />
 
-      {error ? (
-        <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorMessage>{error}</ErrorMessage> : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <SummaryCard title="Total de pesquisas" value={totalSurveys} />
         <SummaryCard title="Total de campanhas" value={totalCampaigns} />
         <SummaryCard title="Pesquisas ativas" value={activeSurveys} />
         <SummaryCard title="Em rascunho" value={draftSurveys} />
-        <SummaryCard title="Arquivadas" value={archivedSurveys} />
+        <SummaryCard title="Encerradas" value={archivedSurveys} />
         <SummaryCard title="Respostas recebidas" value={totalResponses} />
       </div>
 
@@ -82,22 +71,22 @@ export function DashboardOverview({
         <CardHeader>
           <CardTitle>Últimas pesquisas</CardTitle>
           <CardDescription>
-            Resumo das pesquisas mais recentes. Respostas, campanhas e QR Codes entram em próximas sprints.
+            Resumo das pesquisas mais recentes da sua empresa.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {latestSurveys.map((survey) => (
             <div
               key={survey.id}
-              className="flex flex-col gap-2 rounded-md border border-white/10 bg-white/[0.035] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-md border border-border bg-surface-muted px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="truncate font-semibold text-white">{survey.title}</p>
+                <p className="truncate font-semibold text-text-primary">{survey.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Criada em {formatDate(survey.created_at)}
                 </p>
               </div>
-              <span className="w-fit rounded-md border border-white/10 bg-white/[0.055] px-2 py-1 text-xs font-medium text-muted-foreground">
+              <span className="w-fit rounded-md border border-border bg-surface px-2 py-1 text-xs font-medium text-text-secondary">
                 {surveyStatusLabels[survey.status]}
               </span>
             </div>
@@ -113,9 +102,17 @@ function SummaryCard({ title, value }: { title: string; value: number }) {
     <Card>
       <CardContent className="p-5">
         <p className="text-sm text-muted-foreground">{title}</p>
-        <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
+        <p className="mt-3 text-3xl font-semibold text-text-primary">{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function ErrorMessage({ children }: { children: string }) {
+  return (
+    <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-sm text-danger">
+      {children}
+    </p>
   );
 }
 

@@ -695,6 +695,182 @@ Escolha:
 Sugestao de commit:
 - `[S7.4] Consolidada operacao de respostas e preview`
 
+## Sprint 7.5A - Sinais de Prototipo
+
+Status: implementada e pendente de validacao manual final no navegador.
+
+Objetivo:
+- Remover sinais de produto em construcao.
+- Melhorar a percepcao de maturidade do sistema sem criar funcionalidades novas.
+
+Entregas:
+- Landing Page passou a diferenciar visitante e usuario autenticado.
+- Visitante ve `Entrar` e `Criar conta`.
+- Usuario autenticado ve apenas `Abrir painel`.
+- Campo `Empresa` foi removido do cadastro.
+- Empresa continua sendo criada exclusivamente no onboarding.
+- Landing removeu referencias a roadmap interno e modulo futuro.
+- Dashboard removeu texto sobre proximas sprints.
+- Configuracoes removeu referencia a sprint futura.
+- Exclusao de perguntas ganhou confirmacao antes de executar a acao.
+- Textos visiveis tocados nesta sprint foram revisados para reduzir sensacao de prototipo.
+
+Banco de dados:
+- Nenhuma tabela foi criada.
+- Nenhuma coluna foi alterada.
+- Nenhuma policy RLS foi alterada.
+- Nenhuma migration nova e necessaria.
+
+Regras de negocio:
+- Cadastro cria apenas a conta do usuario.
+- Cadastro da empresa permanece no onboarding.
+- Landing nao mostra `Entrar` ou `Criar conta` para usuario autenticado.
+- Exclusao de pergunta so acontece apos confirmacao do usuario.
+- Nenhuma metrica, dashboard analitico, campanha, template ou fluxo novo foi criado.
+
+Criterios de teste:
+- Abrir `/` sem sessao e confirmar botoes `Entrar` e `Criar conta`.
+- Abrir `/` autenticado e confirmar apenas `Abrir painel`.
+- Abrir `/cadastro` e confirmar que nao existe campo `Empresa`.
+- Abrir `/dashboard` e confirmar que nao ha texto sobre proximas sprints.
+- Abrir `/configuracoes` e confirmar que nao ha texto sobre sprint futura.
+- Abrir construtor de perguntas e confirmar que `Excluir` pede confirmacao.
+- Cancelar confirmacao e confirmar que a pergunta permanece.
+- Confirmar exclusao e validar que o fluxo existente continua funcionando.
+
+Validacoes executadas:
+- `npx tsc --noEmit --incremental false`.
+- `npx eslint "src/**/*.{ts,tsx}" --no-cache`.
+- `npm run lint` foi tentado, mas o cache local do Next em `.next/cache/eslint` retornou `EPERM`.
+- `npm run build` foi tentado, mas falhou por bloqueio de acesso ao Google Fonts usado por `next/font`.
+
+Pontos de atencao:
+- A Sprint 7.5A nao tratou redesign, dashboard analitico, branding, upload de logo, recuperacao de senha, perfil, avatar ou multiusuario.
+- Algumas mensagens tecnicas internas de erro do Supabase ainda mencionam aplicacao de SQL; elas nao foram alteradas por nao fazerem parte do fluxo normal do usuario final.
+
+Fora de escopo:
+- Dashboard analitico.
+- Landing Page comercial definitiva.
+- Branding.
+- Nova copy comercial.
+- Templates.
+- Agency Mode.
+- Campanhas.
+- Distribuicao.
+- IA.
+- Upload de logo.
+- Recuperacao de senha.
+- Perfil de usuario.
+- Avatar.
+- Multiusuario.
+- Novas tabelas.
+- Refatoracao estrutural.
+
+Decisao arquitetural:
+- A sprint manteve a arquitetura existente e aplicou apenas ajustes de interface e microcopy.
+
+Motivo:
+- O objetivo era remover sinais de prototipo sem aumentar o escopo do MVP.
+
+Alternativas consideradas:
+- Redesenhar landing.
+- Criar perfil/avatar.
+- Implementar recuperacao de senha.
+
+Escolha:
+- Corrigir apenas inconsistencias visiveis e manter temas maiores para sprints futuras.
+
+Sugestao de commit:
+- `[S7.5A] Removidos sinais de prototipo da interface`
+
+## Sprint 7.5B - Comunicação e Consistência
+
+Status: implementada e pendente de validação manual final no navegador.
+
+Objetivo:
+- Melhorar a comunicação do produto.
+- Padronizar nomenclaturas visíveis ao usuário.
+- Eliminar pequenas inconsistências de texto sem criar funcionalidades novas.
+
+Entregas:
+- Corrigida acentuação de textos visíveis em Pesquisas, Perguntas, Respostas, QR Code, Configurações de empresa e página pública.
+- Status de pesquisa em rascunho passou de `Em preparacao` para `Em preparação`.
+- Ação de pesquisa arquivada foi padronizada para linguagem de encerramento: botão `Encerrar`, mensagem `Pesquisa encerrada` e status `Encerrada`.
+- Dashboard passou a exibir o contador de pesquisas encerradas como `Encerradas`.
+- QR Code passou a exibir aviso contextual quando a pesquisa não está ativa: `Esta pesquisa não está recebendo respostas públicas no momento.`
+- Nome do arquivo CSV passou a usar slug do título da pesquisa, no formato `respostas-nome-da-pesquisa.csv`.
+- Conteúdo, colunas e estrutura do CSV não foram alterados.
+
+Banco de dados:
+- Nenhuma tabela foi criada.
+- Nenhuma coluna foi alterada.
+- Nenhuma policy RLS foi alterada.
+- Nenhuma migration nova é necessária.
+
+Regras de negócio:
+- Pesquisas `active` continuam recebendo respostas públicas.
+- Pesquisas `draft` e `archived` continuam bloqueadas para respostas públicas.
+- QR Code e link público continuam disponíveis para cópia e download em todos os status.
+- Arquivamento técnico continua usando `status = archived`; apenas a comunicação de interface usa `Encerrada`.
+- Nenhum fluxo de dashboard, analytics, navegação, campanha, perfil ou banco foi alterado.
+
+Critérios de teste:
+- Abrir `/pesquisas` e confirmar textos com acentuação correta.
+- Criar ou editar pesquisa e confirmar labels `Título`, `Descrição` e `Salvar alterações`.
+- Confirmar que pesquisa em rascunho mostra status `Em preparação`.
+- Confirmar que o botão de encerramento aparece como `Encerrar` e mantém o comportamento existente.
+- Abrir QR Code de pesquisa em preparação ou encerrada e confirmar o aviso contextual.
+- Abrir QR Code de pesquisa ativa e confirmar que o aviso não aparece.
+- Exportar CSV em `/respostas/[surveyId]` e confirmar nome amigável baseado no título da pesquisa.
+- Confirmar que o conteúdo do CSV não mudou.
+
+Validações executadas:
+- Typecheck e lint devem ser executados após esta atualização.
+
+Pontos de atenção:
+- A Sprint 7.5B não implementa toast global, novo sistema de feedback, redesign, novas rotas, navegação, dashboard analítico ou alterações de banco.
+- O nome do PNG do QR Code continua usando o identificador da pesquisa, pois o escopo aprovado tratava apenas o nome do CSV.
+
+Fora de escopo:
+- Toast global.
+- Sonner.
+- Novo sistema de feedback visual.
+- Refatoração de estados vazios.
+- Revisão mobile ampla.
+- Navegação.
+- Novas rotas.
+- Modal próprio.
+- Dashboard.
+- Analytics.
+- Templates.
+- Branding.
+- Landing comercial.
+- Agency Mode.
+- Distribuição.
+- Upload de logo.
+- Perfil.
+- Avatar.
+- Multiusuário.
+- Banco de dados.
+- RLS.
+
+Decisão arquitetural:
+- Manter a arquitetura existente e tratar a sprint como ajuste de comunicação.
+
+Motivo:
+- O objetivo da sprint era aumentar percepção de acabamento sem expandir o MVP.
+
+Alternativas consideradas:
+- Criar sistema global de toast.
+- Reestruturar status de campanhas e pesquisas.
+- Alterar a lógica de QR Code para bloquear links de pesquisas não ativas.
+
+Escolha:
+- Corrigir apenas microcopy, nomenclatura e feedback contextual, preservando comportamento e regras de negócio.
+
+Sugestao de commit:
+- `[S7.5B] Ajustada comunicação e consistência da interface`
+
 ## Versionamento Git
 
 Status: configurado.
@@ -714,3 +890,218 @@ Regra de fluxo:
 
 Cuidados:
 - `.env.local`, `.env`, `.next`, `node_modules`, `.vercel`, `dist`, `build`, `.vscode` e caches locais ficam fora do versionamento.
+
+## Sprint R1.2 — Product Experience Fixes
+
+Data: 2026-06-16
+
+Objetivo:
+- Eliminar inconsistências visuais remanescentes da migração R1/R1.1.
+- Reduzir sensação de CRUD nas áreas operacionais.
+- Orientar melhor o usuário após criar ou configurar pesquisas.
+
+Entregas:
+- Modal de detalhes em `/respostas/[surveyId]` migrado para tokens semânticos light-first.
+- Cards internos de respostas atualizados para `bg-surface`, `bg-surface-muted`, `border-border` e `text-text-primary`.
+- Campos de campanhas migrados para primitives `Textarea` e `Select`.
+- Dropdowns de campanhas removidos do visual legado escuro.
+- Cards de pesquisas reorganizados com CTA principal `Gerenciar pesquisa`.
+- Ações secundárias de pesquisa agrupadas em menu compacto.
+- Painel de próximos passos adicionado após salvar pesquisa.
+- Orientação de continuidade adicionada ao construtor de perguntas.
+- Textos visíveis dos arquivos afetados normalizados com acentuação correta.
+
+Arquivos alterados:
+- `src/components/responses/survey-responses-panel.tsx`
+- `src/components/campaigns/campaign-manager.tsx`
+- `src/components/surveys/survey-manager.tsx`
+- `src/components/surveys/question-builder.tsx`
+- `KOGNIS_PROJECT_LOG.md`
+
+Critérios de validação:
+- `/respostas/[surveyId]` não deve exibir modal escuro legado.
+- `/campanhas` deve exibir textarea, select e opções com contraste adequado.
+- `/pesquisas` deve apresentar menos ações repetidas por card em mobile.
+- Após criar pesquisa, o usuário deve visualizar próximos passos claros.
+- Após configurar perguntas, o usuário deve ter caminho claro para preview e continuidade.
+- Nenhuma regra de negócio, Auth, Supabase, RLS ou banco foi alterado.
+
+Validações executadas:
+- `npx eslint "src/**/*.{ts,tsx}" --no-cache`
+- `npx tsc --noEmit --incremental false`
+
+Resultado:
+- Lint passou.
+- Typecheck passou.
+- Varredura nos arquivos afetados não encontrou `text-white`, `bg-kognis-cyber`, `border-white/10`, `bg-white/[...]`, `text-red-100` ou `kognis-teal`.
+
+Pontos de atenção:
+- Esta sprint não inicia R2 nem altera Application Shell.
+- A solução de menu compacto em pesquisas usa comportamento nativo com `details`.
+- Build completo não foi solicitado nesta sprint; as validações obrigatórias aprovadas foram lint e typecheck.
+
+Próximos passos recomendados:
+- Iniciar R2 — Application Shell somente após validação visual manual da R1.2.
+- Na R2, tratar sidebar, header, navegação premium, containers principais e layout base.
+
+Sugestão de commit:
+- `[R1.2] Ajustada experiência operacional pós-fundação visual`
+
+## Sprint R1.3 — Mobile Action Polish
+
+Data: 2026-06-16
+
+Objetivo:
+- Refinar a experiência mobile das áreas operacionais antes da R2.
+- Reduzir altura visual e repetição de botões no gerenciamento de perguntas.
+- Reforçar a hierarquia entre ação principal e ações secundárias.
+
+Entregas:
+- Ações de cada pergunta foram compactadas no construtor.
+- A ação `Editar` permanece visível como ação direta.
+- Ações secundárias de pergunta foram agrupadas em menu compacto:
+  - mover para cima;
+  - mover para baixo;
+  - excluir.
+- Cards de perguntas ficaram mais densos em mobile, com menos altura e menos botões empilhados.
+- Header do construtor de perguntas foi ajustado para ações mais curtas em telas pequenas.
+- Cards de pesquisas receberam ajuste leve de densidade no mobile.
+- CTA principal de pesquisa foi encurtado para `Gerenciar` no mobile e mantém `Gerenciar pesquisa` em telas maiores.
+
+Arquivos alterados:
+- `src/components/surveys/question-builder.tsx`
+- `src/components/surveys/survey-manager.tsx`
+- `KOGNIS_PROJECT_LOG.md`
+
+Critérios de validação:
+- Em `/pesquisas`, abrir o construtor de perguntas em mobile.
+- Confirmar que cada pergunta não exibe mais `Subir`, `Descer`, `Editar` e `Excluir` empilhados.
+- Confirmar que `Editar` continua acessível.
+- Confirmar que mover para cima, mover para baixo e excluir continuam acessíveis pelo menu compacto.
+- Confirmar que os cards de pesquisa ficam menos altos em mobile.
+- Confirmar que não há overflow horizontal em larguras próximas de 388px, 390px, 414px e 768px.
+
+Validações executadas:
+- `npx eslint "src/**/*.{ts,tsx}" --no-cache`
+- `npx tsc --noEmit --incremental false`
+
+Resultado:
+- Lint passou.
+- Typecheck passou.
+
+Fora de escopo:
+- Nenhuma alteração em banco, Supabase, Auth, RLS, rotas ou regras de negócio.
+- Nenhuma alteração de sidebar, header, dashboard, analytics, landing ou Application Shell.
+
+Próximos passos recomendados:
+- Validar visualmente em mobile real ou DevTools nas larguras 388px, 390px, 414px e 768px.
+- Após aprovação da R1.3, iniciar planejamento/execução da R2 — Application Shell.
+
+Sugestão de commit:
+- `[R1.3] Refinada experiência mobile das ações operacionais`
+
+## Sprint R2 — Application Shell
+
+Data: 2026-06-17
+
+Objetivo:
+- Criar uma nova moldura visual premium para a área autenticada.
+- Aproximar o produto da referência Lovable em ritmo visual, hierarquia, espaçamento e navegação.
+- Preservar regras de negócio, banco, Auth, Supabase, RLS, rotas e funcionalidades existentes.
+
+Entregas:
+- Novo `AppSidebar` light-first com marca, empresa, navegação principal e ação de logout.
+- Novo `AppTopbar` com contexto do produto, empresa atual, menu mobile e logout.
+- `AppShellClient` refatorado para usar a nova estrutura visual autenticada.
+- `PageContainer` criado para padronizar largura, padding e espaçamento.
+- `PageHeader` criado para padronizar título, descrição, eyebrow e ações de página.
+- `PageSection` criado como seção visual reutilizável.
+- `ShellActionGroup` criado para agrupar ações de shell/página.
+- Wrappers antigos `Header` e `Sidebar` foram mantidos, mas agora apontam para os componentes novos.
+- Marca `BrandMark` alinhada aos tokens semânticos da R1.
+- Navegação normalizada com `Configurações` em acentuação correta.
+
+Páginas migradas:
+- `/dashboard`
+- `/pesquisas`
+- `/respostas`
+- `/respostas/[surveyId]`
+- `/campanhas`
+- `/configuracoes`
+- `/pesquisas/[surveyId]/preview`
+
+Arquivos criados:
+- `src/components/layout/app-sidebar.tsx`
+- `src/components/layout/app-topbar.tsx`
+- `src/components/layout/page-container.tsx`
+- `src/components/layout/page-header.tsx`
+- `src/components/layout/page-section.tsx`
+- `src/components/layout/shell-action-group.tsx`
+
+Arquivos alterados:
+- `src/components/layout/app-shell-client.tsx`
+- `src/components/layout/header.tsx`
+- `src/components/layout/sidebar.tsx`
+- `src/components/layout/logout-button.tsx`
+- `src/components/marketing/brand-mark.tsx`
+- `src/constants/navigation.ts`
+- `src/app/dashboard/page.tsx`
+- `src/app/pesquisas/page.tsx`
+- `src/app/respostas/page.tsx`
+- `src/app/respostas/[surveyId]/page.tsx`
+- `src/app/campanhas/page.tsx`
+- `src/app/configuracoes/page.tsx`
+- `src/app/pesquisas/[surveyId]/preview/page.tsx`
+- `src/components/dashboard/dashboard-overview.tsx`
+- `src/components/responses/responses-panel.tsx`
+- `src/components/responses/survey-responses-panel.tsx`
+- `src/components/campaigns/campaign-manager.tsx`
+- `src/components/surveys/survey-manager.tsx`
+- `KOGNIS_PROJECT_LOG.md`
+
+Validações executadas:
+- `npx eslint "src/**/*.{ts,tsx}" --no-cache`
+- `npx tsc --noEmit --incremental false`
+- `npm run build`
+
+Resultado das validações:
+- Lint passou.
+- Typecheck passou.
+- Varredura nas áreas migradas não encontrou uso crítico de `bg-kognis-cyber`, `text-kognis-teal`, `border-kognis-teal`, `text-white`, `bg-white/[...]` ou `border-white/...`.
+- Build não concluiu por limitação local de permissão/cache em `.next`:
+  - `EPERM: operation not permitted, open '.next/cache/webpack/server-production/2.pack_'`
+  - `EPERM: operation not permitted, open '.next/trace'`
+
+Documentos oficiais:
+- `docs/FRONTEND_AUDIT_R0_5.md` existe e foi consultado.
+- `docs/RELAYOUT_VISION.md` existe, mas está vazio no workspace.
+- `docs/RELAYOUT_EXECUTION_PLAN.md` existe, mas está vazio no workspace.
+- `docs/KOGNIS_DESIGN_LANGUAGE_V1.md` existe, mas está vazio no workspace.
+- `docs/KOGNIS_VISUAL_SPEC_V1.md` existe, mas está vazio no workspace.
+- `docs/KOGNIS_VISUAL_DIRECTION_V1.md` existe, mas está vazio no workspace.
+- `docs/KOGNIS_INTERACTION_SPEC_V1.md` não existe no workspace.
+
+Fora de escopo:
+- Nenhum dashboard novo foi implementado.
+- Nenhum gráfico, analytics, insight, IA, métrica nova ou consulta nova foi criado.
+- Nenhuma landing, login, cadastro ou página pública `/participar/[surveyId]` foi alterada por escopo da R2.
+- Nenhuma regra de negócio, banco, Auth, Supabase ou RLS foi alterado.
+
+Decisões técnicas:
+- A R2 foi implementada por refatoração centralizada do `AppShellClient`, preservando as rotas e fluxos existentes.
+- `Header` e `Sidebar` antigos foram mantidos como wrappers para reduzir risco de quebra caso algum import antigo ainda exista.
+- Os cabeçalhos das rotas obrigatórias passaram a usar `PageHeader`.
+- As rotas obrigatórias passaram a usar `PageContainer`.
+
+Decisões visuais:
+- Sidebar saiu do tema escuro legado e passou para base `bg-surface`, `border-border`, `text-text-*` e ativo em `brand`.
+- Topbar ficou light-first, sem busca ou notificações falsas.
+- A empresa atual é exibida de forma discreta, sem avatar fake ou multiusuário.
+- Campanhas permanece na navegação, mas com menor centralidade que Dashboard, Pesquisas e Respostas.
+
+Próximos passos recomendados:
+- Validar visualmente a R2 em desktop, 768px, 414px, 390px e 388px.
+- Após aprovação, iniciar R3 — Customer Intelligence Experience.
+
+Sugestão de commit:
+- `[R2] Implementado application shell visual`

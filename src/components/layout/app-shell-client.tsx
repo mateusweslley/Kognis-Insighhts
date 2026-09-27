@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import { Header } from "@/components/layout/header";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { AppTopbar } from "@/components/layout/app-topbar";
 import { cn } from "@/lib/utils";
 
 type AppShellClientProps = {
@@ -15,29 +15,29 @@ export function AppShellClient({ children, companyName }: AppShellClientProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen lg:flex">
-      <Sidebar companyName={companyName} className="hidden lg:block" />
+    <div className="min-h-screen bg-background lg:flex">
+      <AppSidebar companyName={companyName} className="hidden lg:flex" />
 
       <div
         className={cn(
-          "fixed inset-0 z-30 bg-black/60 opacity-0 backdrop-blur-sm transition-opacity duration-200 lg:hidden",
+          "fixed inset-0 z-30 bg-black/30 opacity-0 backdrop-blur-sm transition-opacity duration-200 lg:hidden",
           isSidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none",
         )}
         aria-hidden="true"
         onClick={() => setIsSidebarOpen(false)}
       />
-      <Sidebar
+      <AppSidebar
         companyName={companyName}
         onNavigate={() => setIsSidebarOpen(false)}
         className={cn(
-          "fixed inset-y-0 left-0 z-40 block min-h-dvh transform transition-transform duration-200 ease-out lg:hidden",
+          "fixed inset-y-0 left-0 z-40 flex min-h-dvh max-w-[86vw] transform transition-transform duration-200 ease-out lg:hidden",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       />
 
       <div className="min-w-0 flex-1">
-        <Header companyName={companyName} onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="px-4 py-6 sm:px-5 lg:px-8">{children}</main>
+        <AppTopbar companyName={companyName} onMenuClick={() => setIsSidebarOpen(true)} />
+        <main className="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">{children}</main>
       </div>
     </div>
   );
