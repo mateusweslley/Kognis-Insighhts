@@ -1,5 +1,11 @@
+import { resolveEffectiveCampaignSurveyId } from "@/lib/campaign-admin-utils";
 import { createClient } from "@/lib/supabase/server";
-import type { Campaign, CampaignWithSurvey } from "@/types/campaign";
+import type {
+  Campaign,
+  CampaignReward,
+  CampaignSurvey,
+  CampaignWithSurvey,
+} from "@/types/campaign";
 
 type CampaignsResult = {
   campaigns: CampaignWithSurvey[];
@@ -28,13 +34,74 @@ export async function getCampaignsByCompany(companyId: string): Promise<Campaign
     };
   }
 
+  const rawCampaigns = (data ?? []) as Array<Campaign & { surveys?: { title: string } | null }>;
+  if (rawCampaigns.length === 0) {
+    return {
+      campaigns: [],
+      error: null,
+    };
+  }
+
+  const campaignIds = rawCampaigns.map((campaign) => campaign.id);
+
+  // Carrega dados complementares (vínculos N:N, recompensas, contagem de claims e títulos de pesquisas)
+  // de forma resiliente para preservar compatibilidade caso alguma migration complementar ainda não exista.
+  const [surveysRes, linksRes, rewardsRes, claimsRes] = await Promise.all([
+    supabase.from("surveys").select("id, title").eq("company_id", companyId),
+    supabase
+      .from("campaign_surveys")
+      .select("campaign_id, survey_id, created_at")
+      .in("campaign_id", campaignIds)
+      .order("created_at", { ascending: true }),
+    supabase.from("campaign_rewards").select("*").in("campaign_id", campaignIds),
+    supabase
+      .from("campaign_claims")
+      .select("campaign_id, status")
+      .in("campaign_id", campaignIds)
+      .neq("status", "voided"),
+  ]);
+
+  const surveyTitleMap = new Map<string, string>();
+  ((surveysRes.data ?? []) as Array<{ id: string; title: string }>).forEach((survey) => {
+    surveyTitleMap.set(survey.id, survey.title);
+  });
+
+  const campaignSurveysList = (linksRes.error ? [] : (linksRes.data ?? [])) as CampaignSurvey[];
+
+  const rewardsByCampaignId = new Map<string, CampaignReward>();
+  if (!rewardsRes.error && rewardsRes.data) {
+    (rewardsRes.data as CampaignReward[]).forEach((reward) => {
+      rewardsByCampaignId.set(reward.campaign_id, reward);
+    });
+  }
+
+  const claimsCountByCampaignId = new Map<string, number>();
+  if (!claimsRes.error && claimsRes.data) {
+    (claimsRes.data as Array<{ campaign_id: string; status: string }>).forEach((claim) => {
+      claimsCountByCampaignId.set(
+        claim.campaign_id,
+        (claimsCountByCampaignId.get(claim.campaign_id) ?? 0) + 1,
+      );
+    });
+  }
+
   return {
-    campaigns: ((data ?? []) as Array<Campaign & { surveys?: { title: string } | null }>).map(
-      (campaign) => ({
+    campaigns: rawCampaigns.map((campaign) => {
+      const effectiveSurveyId = resolveEffectiveCampaignSurveyId(campaign, campaignSurveysList);
+      const resolvedTitle =
+        (effectiveSurveyId ? surveyTitleMap.get(effectiveSurveyId) : null) ??
+        campaign.surveys?.title ??
+        null;
+
+      return {
         ...campaign,
-        survey_title: campaign.surveys?.title ?? null,
-      }),
-    ),
+        survey_id: effectiveSurveyId ?? campaign.survey_id ?? null,
+        linked_survey_id: effectiveSurveyId,
+        survey_title: resolvedTitle,
+        reward: rewardsByCampaignId.get(campaign.id) ?? null,
+        claims_count: claimsCountByCampaignId.get(campaign.id) ?? 0,
+      };
+    }),
     error: null,
   };
 }
@@ -80,6 +147,13 @@ export async function createCampaign(campaign: {
   name: string;
   description: string | null;
   status: Campaign["status"];
+  campaignType?: Campaign["campaign_type"];
+  startsAt?: string | null;
+  endsAt?: string | null;
+  maxClaimsTotal?: number | null;
+  identityRequirement?: Campaign["identity_requirement"];
+  claimValidityDays?: number | null;
+  completionMessage?: string | null;
 }) {
   const supabase = createClient();
 
@@ -91,6 +165,21 @@ export async function createCampaign(campaign: {
       name: campaign.name,
       description: campaign.description,
       status: campaign.status,
+      ...(campaign.campaignType ? { campaign_type: campaign.campaignType } : {}),
+      ...(campaign.startsAt !== undefined ? { starts_at: campaign.startsAt } : {}),
+      ...(campaign.endsAt !== undefined ? { ends_at: campaign.endsAt } : {}),
+      ...(campaign.maxClaimsTotal !== undefined
+        ? { max_claims_total: campaign.maxClaimsTotal }
+        : {}),
+      ...(campaign.identityRequirement
+        ? { identity_requirement: campaign.identityRequirement }
+        : {}),
+      ...(campaign.claimValidityDays !== undefined
+        ? { claim_validity_days: campaign.claimValidityDays }
+        : {}),
+      ...(campaign.completionMessage !== undefined
+        ? { completion_message: campaign.completionMessage }
+        : {}),
     })
     .select("*, surveys(title)")
     .single();
@@ -120,6 +209,13 @@ export async function updateCampaign(campaign: {
   name: string;
   description: string | null;
   status: Campaign["status"];
+  campaignType?: Campaign["campaign_type"];
+  startsAt?: string | null;
+  endsAt?: string | null;
+  maxClaimsTotal?: number | null;
+  identityRequirement?: Campaign["identity_requirement"];
+  claimValidityDays?: number | null;
+  completionMessage?: string | null;
 }) {
   const supabase = createClient();
 
@@ -130,6 +226,21 @@ export async function updateCampaign(campaign: {
       name: campaign.name,
       description: campaign.description,
       status: campaign.status,
+      ...(campaign.campaignType ? { campaign_type: campaign.campaignType } : {}),
+      ...(campaign.startsAt !== undefined ? { starts_at: campaign.startsAt } : {}),
+      ...(campaign.endsAt !== undefined ? { ends_at: campaign.endsAt } : {}),
+      ...(campaign.maxClaimsTotal !== undefined
+        ? { max_claims_total: campaign.maxClaimsTotal }
+        : {}),
+      ...(campaign.identityRequirement
+        ? { identity_requirement: campaign.identityRequirement }
+        : {}),
+      ...(campaign.claimValidityDays !== undefined
+        ? { claim_validity_days: campaign.claimValidityDays }
+        : {}),
+      ...(campaign.completionMessage !== undefined
+        ? { completion_message: campaign.completionMessage }
+        : {}),
     })
     .eq("id", campaign.id)
     .select("*, surveys(title)")
@@ -199,8 +310,12 @@ function getFriendlyCampaignError(message: string, code?: string) {
     return "A tabela de campanhas ainda nao foi criada no Supabase. Aplique o SQL de supabase/campaigns.sql.";
   }
 
+  if (normalizedMessage.includes("survey already has an active campaign")) {
+    return "Esta pesquisa já possui uma campanha ativa. Pause ou arquive a campanha atual antes de ativar outra.";
+  }
+
   if (code === "23514") {
-    return "Revise nome e status antes de salvar a campanha.";
+    return "Revise os dados e regras informados antes de salvar a campanha.";
   }
 
   if (normalizedMessage.includes("permission") || normalizedMessage.includes("row-level security")) {

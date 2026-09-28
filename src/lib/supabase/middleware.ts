@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 
 const protectedRoutes = [
   "/dashboard",
@@ -17,9 +18,11 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {

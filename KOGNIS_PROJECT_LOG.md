@@ -1105,3 +1105,65 @@ Próximos passos recomendados:
 
 Sugestão de commit:
 - `[R2] Implementado application shell visual`
+
+## Campanhas & Recompensas — Sprint 1 (Fundação de Campanhas e Recompensas)
+
+Status: concluída (`3c69822`).
+
+Entregas:
+- Migration `supabase/2026_campaigns_foundation.sql` evoluindo `public.campaigns` e criando `public.campaign_surveys`, `public.campaign_rewards` e `public.campaign_claims`.
+- RLS por `company_id` / `owner_id = auth.uid()` e triggers de integridade no banco.
+- Contratos e helpers puros em `src/types/campaign.ts`, `src/lib/campaign-utils.ts`, `src/lib/campaigns.ts`, `src/lib/campaign-surveys.ts`, `src/lib/campaign-rewards.ts` e `src/lib/campaign-claims.ts`.
+
+## Campanhas & Recompensas — Sprint 2 (Submission Gateway + Emissão de Recompensas)
+
+Status: concluída.
+
+Entregas:
+- Criados contratos de submissão em `src/types/submission.ts`.
+- Criados utilitários puros de elegibilidade e emissão em `src/lib/campaign-issuance-utils.ts`.
+- Criada migration `supabase/2026_submission_gateway.sql` com RPC `public.submit_public_survey_response` (`SECURITY DEFINER`), proteção de concorrência (`FOR UPDATE`), idempotência por `submission_key`, e subtransação `EXCEPTION` para preservar a resposta pública mesmo em caso de falha na emissão de recompensa.
+- Criado gateway cliente `src/lib/submission-gateway.ts` com sanitização de payload público e fallback compatível durante transição.
+- Criado componente `src/components/responses/submission-completion-card.tsx` e integrado a `DynamicPublicResponseForm` e `PublicResponseForm`.
+- Criada suíte de testes `src/lib/submission-gateway.test.ts` (16 testes).
+
+## Campanhas & Recompensas — Sprint 3 (Administração de Campanhas e Recompensas)
+
+Status: implementada e validada.
+
+Objetivo:
+- Permitir que a empresa autenticada configure, gerencie, visualize em preview e acompanhe operacionalmente campanhas, recompensas, regras de emissão e benefícios emitidos (`campaign_claims`) em `/campanhas`, sem novas migrations SQL e preservando total compatibilidade com as Sprints 1 e 2.
+
+Entregas (S3.2 → S3.13):
+- **S3.2 — Informações básicas, período e regras**:
+  - Evoluído `src/types/campaign.ts` com `CampaignDisplayStatus`, `SanitizedCampaignClaimView`, `campaignDisplayStatusLabels` e `identityRequirementDescriptions`.
+  - Criado `src/lib/campaign-admin-utils.ts` com validações puras de nome, descrição, tipo (`reward_on_response`), status (`draft`, `active`, `paused`, `archived`), janela temporal (`starts_at <= ends_at`), `max_claims_total`, `claim_validity_days`, `identity_requirement` (`none | email | phone`) e `completion_message`.
+  - Expiração tratada como estado visual derivado (`expired` quando `status === 'active'` e `ends_at <= now()`), nunca persistido no banco.
+- **S3.3 — Pesquisa vinculada**:
+  - Sincronização dupla entre `campaign_surveys` (fonte prioritária N:N) e `campaigns.survey_id` (compatibilidade legada).
+  - Leitura administrativa em `getCampaignsByCompany` priorizando `campaign_surveys` com fallback para `campaigns.survey_id`.
+  - Bloqueio preventivo na UI e na validação pura contra duas campanhas ativas vinculadas à mesma pesquisa.
+- **S3.4 — Configuração de recompensa**:
+  - Edição e persistência 1:1 em `campaign_rewards` (`upsert` por `campaign_id` / remoção quando desabilitada).
+  - Suporte a `percentage` (1–100), `fixed_amount` (> 0), `gift` e `custom`.
+  - Modos de código `unique` (`fixed_code = null`, formato `KOGNIS-XXXXXX` no gateway) e `fixed` (`fixed_code` obrigatório e normalizado em maiúsculas).
+- **S3.5 — Regras básicas de emissão**:
+  - Configuração de `max_claims_total`, `claim_validity_days` e `identity_requirement` com explicações claras para o operador.
+- **S3.6 — Mensagem de conclusão**:
+  - Configuração de `completion_message` com fallback automático para `"Sua participação foi registrada com sucesso."`.
+- **S3.7 — Preview administrativo da campanha**:
+  - Simulação visual em `/campanhas` (tanto dentro do formulário quanto por card de campanha salva) reutilizando `SubmissionCompletionCard` e `buildCampaignPreviewPayload`, sem chamar o Submission Gateway e sem gravar `responses` ou `campaign_claims`.
+- **S3.8 — Painel de detalhes operacionais**:
+  - Visão consolidada por campanha com blocos de Resumo, Recompensa, Regras e Operação (`claims_count` / `max_claims_total` e situação operacional).
+- **S3.9 — Lista administrativa segura de claims**:
+  - Carregamento sob demanda e sanitização via `sanitizeClaimsForAdminView`, exibindo código, status (incluindo expiração derivada), data de emissão, validade, pesquisa e rótulo seguro de identificação, sem jamais expor `identity_hash`, `device_hash`, `claim_token` ou `submission_key`.
+- **S3.10 — Controles de ciclo de vida**:
+  - Ações contextuais por estado: `Draft` (editar, ativar, arquivar), `Active` (editar, pausar, arquivar), `Paused` (editar, reativar, arquivar) e `Archived` (modo somente leitura).
+- **S3.11 — Testes automatizados**:
+  - Criado `src/lib/campaign-admin-utils.test.ts` cobrindo os 15 cenários obrigatórios + preview administrativo.
+
+Validações executadas:
+- `npx tsc --noEmit --incremental false`
+- `npx eslint "src/**/*.{ts,tsx}" --no-cache`
+- `npx vitest run`
+

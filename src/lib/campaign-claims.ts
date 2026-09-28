@@ -1,8 +1,18 @@
+import { sanitizeClaimsForAdminView } from "@/lib/campaign-admin-utils";
 import { createClient } from "@/lib/supabase/server";
-import type { CampaignClaim } from "@/types/campaign";
+import type {
+  CampaignClaim,
+  IdentityRequirement,
+  SanitizedCampaignClaimView,
+} from "@/types/campaign";
 
 type CampaignClaimsResult = {
   claims: CampaignClaim[];
+  error: string | null;
+};
+
+type SanitizedCampaignClaimsResult = {
+  claims: SanitizedCampaignClaimView[];
   error: string | null;
 };
 
@@ -25,6 +35,28 @@ export async function getCampaignClaims(campaignId: string): Promise<CampaignCla
   }
 
   return { claims: (data ?? []) as CampaignClaim[], error: null };
+}
+
+/**
+ * Retorna as claims já sanitizadas para visualização administrativa,
+ * descartando `identity_hash` e `device_hash`.
+ */
+export async function getSanitizedCampaignClaims(
+  campaignId: string,
+  options?: {
+    identityRequirement?: IdentityRequirement;
+    surveyTitleById?: ReadonlyMap<string, string> | Record<string, string>;
+  },
+): Promise<SanitizedCampaignClaimsResult> {
+  const { claims, error } = await getCampaignClaims(campaignId);
+  if (error) {
+    return { claims: [], error };
+  }
+
+  return {
+    claims: sanitizeClaimsForAdminView(claims, options),
+    error: null,
+  };
 }
 
 function getFriendlyCampaignClaimsError(message: string, code?: string) {

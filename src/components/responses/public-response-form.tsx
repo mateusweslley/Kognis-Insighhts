@@ -2,12 +2,14 @@
 
 import { useState, type FormEvent } from "react";
 
+import { SubmissionCompletionCard } from "@/components/responses/submission-completion-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { submitPublicSurveyResponse } from "@/lib/submission-gateway";
 import type { ResponseAnswers } from "@/types/response";
+import type { IssuedRewardPayload } from "@/types/submission";
 
 type PublicResponseFormProps = {
   surveyId: string;
@@ -19,8 +21,11 @@ export function PublicResponseForm({ surveyId, isPreview = false }: PublicRespon
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState("");
   const [comment, setComment] = useState("");
+  const [submissionKey] = useState(() => createSubmissionKey());
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [issuedReward, setIssuedReward] = useState<IssuedRewardPayload | null>(null);
+  const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -63,33 +68,30 @@ export function PublicResponseForm({ surveyId, isPreview = false }: PublicRespon
       comment: trimmedComment || undefined,
     };
 
-    const supabase = createClient();
-    const { error: saveError } = await supabase.from("responses").insert({
-      survey_id: surveyId,
+    const result = await submitPublicSurveyResponse({
+      surveyId,
       answers,
+      submissionKey,
     });
 
-    if (saveError) {
-      console.error("Erro ao salvar resposta publica:", saveError);
-      setError(getFriendlyPublicResponseError(saveError.message));
+    if (result.error || !result.submitted) {
+      setError(result.error ?? "Não foi possível enviar sua resposta agora. Tente novamente.");
       setIsLoading(false);
       return;
     }
 
+    setIssuedReward(result.reward);
+    setCompletionMessage(result.completionMessage);
     setIsSubmitted(true);
     setIsLoading(false);
   }
 
   if (isSubmitted) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Obrigado pela resposta</CardTitle>
-          <CardDescription>
-            Sua participacao foi registrada com sucesso.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <SubmissionCompletionCard
+        reward={issuedReward}
+        completionMessage={completionMessage}
+      />
     );
   }
 
@@ -174,12 +176,10 @@ export function PublicResponseForm({ surveyId, isPreview = false }: PublicRespon
   );
 }
 
-function getFriendlyPublicResponseError(message: string) {
-  const normalizedMessage = message.toLowerCase();
-
-  if (normalizedMessage.includes("row-level security") || normalizedMessage.includes("permission")) {
-    return "Esta pesquisa não está aceitando respostas no momento.";
+function createSubmissionKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
   }
 
-  return "Não foi possível enviar sua resposta agora. Tente novamente.";
+  return `sub_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 }

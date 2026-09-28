@@ -42,6 +42,25 @@ export type Campaign = {
 
 export type CampaignWithSurvey = Campaign & {
   survey_title: string | null;
+  linked_survey_id?: string | null;
+  reward?: CampaignReward | null;
+  claims_count?: number;
+};
+
+export type CampaignDisplayStatus = CampaignStatus | "expired";
+
+export type SanitizedCampaignClaimView = {
+  id: string;
+  campaign_id: string;
+  survey_id: string | null;
+  survey_title: string | null;
+  code: string | null;
+  status: CampaignClaimStatus;
+  issued_at: string;
+  expires_at: string | null;
+  redeemed_at: string | null;
+  identity_label: string;
+  reward_title: string | null;
 };
 
 export type CampaignSurvey = {
@@ -91,6 +110,20 @@ export const campaignStatusLabels: Record<CampaignStatus, string> = {
   active: "Ativa",
   paused: "Pausada",
   archived: "Arquivada",
+};
+
+export const campaignDisplayStatusLabels: Record<CampaignDisplayStatus, string> = {
+  draft: "Rascunho",
+  active: "Ativa",
+  paused: "Pausada",
+  archived: "Arquivada",
+  expired: "Expirada",
+};
+
+export const identityRequirementDescriptions: Record<IdentityRequirement, string> = {
+  none: "Nenhuma — qualquer resposta válida na pesquisa ativa poderá receber a recompensa.",
+  email: "E-mail — cada pessoa poderá receber a recompensa uma única vez usando seu e-mail.",
+  phone: "Telefone — cada pessoa poderá receber a recompensa uma única vez usando seu telefone.",
 };
 
 export const campaignTypeLabels: Record<CampaignType, string> = {
