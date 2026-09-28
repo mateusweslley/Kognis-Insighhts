@@ -51,6 +51,7 @@ export async function createQuestion(question: NewSurveyQuestion): Promise<Surve
       required: question.required ?? false,
       position: question.position,
       options: question.options ?? [],
+      topic: normalizeTopic(question.topic),
     })
     .select("*")
     .single();
@@ -77,7 +78,10 @@ export async function updateQuestion(
 
   const { data, error } = await supabase
     .from("survey_questions")
-    .update(question)
+    .update({
+      ...question,
+      topic: question.topic === undefined ? undefined : normalizeTopic(question.topic),
+    })
     .eq("id", questionId)
     .select("*")
     .single();
@@ -146,7 +150,18 @@ function normalizeQuestion(row: unknown): SurveyQuestion {
     options: Array.isArray(question.options)
       ? question.options.filter((option): option is string => typeof option === "string")
       : [],
+    topic: normalizeTopic(question.topic),
   };
+}
+
+function normalizeTopic(topic: unknown): string | null {
+  if (topic === null || topic === undefined) {
+    return null;
+  }
+
+  const trimmed = String(topic).trim();
+
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function getFriendlyQuestionError(message: string, code?: string) {

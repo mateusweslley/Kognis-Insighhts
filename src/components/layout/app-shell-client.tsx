@@ -16,7 +16,7 @@ export function AppShellClient({ children, companyName }: AppShellClientProps) {
 
   return (
     <div className="min-h-screen bg-background lg:flex">
-      <AppSidebar companyName={companyName} className="hidden lg:flex" />
+      <AppSidebar companyName={companyName} className="sticky top-0 hidden h-dvh self-start lg:flex" />
 
       <div
         className={cn(

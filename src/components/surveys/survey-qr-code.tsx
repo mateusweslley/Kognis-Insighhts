@@ -23,12 +23,18 @@ export function SurveyQrCode({
   onClose,
 }: SurveyQrCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [publicUrl, setPublicUrl] = useState(`/participar/${surveyId}`);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     setPublicUrl(`${window.location.origin}/participar/${surveyId}`);
   }, [surveyId]);
+
+  useEffect(() => {
+    // Ao abrir o QR Code, rola suavemente até o container para ficar visível.
+    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   async function copyLink() {
     try {
@@ -56,7 +62,7 @@ export function SurveyQrCode({
   }
 
   return (
-    <Card>
+    <Card ref={containerRef} className="scroll-mt-24">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <CardTitle>QR Code da pesquisa</CardTitle>
@@ -72,16 +78,19 @@ export function SurveyQrCode({
       </CardHeader>
       <CardContent className="grid gap-5 md:grid-cols-[auto_1fr] md:items-center">
         <div className="flex justify-center rounded-md border border-border bg-white p-4">
-          <QRCodeCanvas
-            ref={canvasRef}
-            value={publicUrl}
-            size={320}
-            level="H"
-            marginSize={4}
-            bgColor="#ffffff"
-            fgColor="#06151f"
-            title={`QR Code da pesquisa ${surveyTitle}`}
-          />
+          <div className="w-full max-w-[320px]">
+            <QRCodeCanvas
+              ref={canvasRef}
+              value={publicUrl}
+              size={320}
+              level="H"
+              marginSize={4}
+              bgColor="#ffffff"
+              fgColor="#06151f"
+              title={`QR Code da pesquisa ${surveyTitle}`}
+              style={{ width: "100%", height: "auto" }}
+            />
+          </div>
         </div>
 
         <div className="min-w-0 space-y-4">

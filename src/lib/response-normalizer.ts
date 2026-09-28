@@ -167,7 +167,9 @@ function getSummary(fields: NormalizedResponseField[]) {
 }
 
 function formatSummaryValue(field: NormalizedResponseField) {
-  if (field.type === "rating" || normalizeText(field.label).includes("nota")) {
+  const isRating = field.type === "rating" || field.type === "rating_10";
+
+  if (isRating || normalizeText(field.label).includes("nota")) {
     return `Nota ${field.value}`;
   }
 

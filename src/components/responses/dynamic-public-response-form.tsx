@@ -181,32 +181,79 @@ function QuestionField({
 
   if (question.type === "rating") {
     return (
-      <div id={`question-${question.id}`} className="grid grid-cols-5 gap-2">
-        {[1, 2, 3, 4, 5].map((rating) => {
-          const ratingValue = String(rating);
+      <RatingField
+        questionId={question.id}
+        options={[1, 2, 3, 4, 5]}
+        columns={5}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
 
-          return (
-            <label
-              key={rating}
-              className={`flex h-11 items-center justify-center rounded-md border text-sm font-semibold transition-colors ${
-                value === ratingValue
-                  ? "border-brand bg-brand-soft text-text-primary"
-                  : "border-border bg-surface-muted text-text-secondary"
-              }`}
-            >
-              <input
-                type="radio"
-                name={`question-${question.id}`}
-                value={ratingValue}
-                checked={value === ratingValue}
-                onChange={(event) => onChange(event.target.value)}
-                className="sr-only"
-              />
-              {rating}
-            </label>
-          );
-        })}
-      </div>
+  if (question.type === "rating_10") {
+    return (
+      <RatingField
+        questionId={question.id}
+        options={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+        columns={6}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (question.type === "email") {
+    return (
+      <Input
+        id={`question-${question.id}`}
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="voce@exemplo.com"
+      />
+    );
+  }
+
+  if (question.type === "phone") {
+    return (
+      <Input
+        id={`question-${question.id}`}
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        value={value}
+        onChange={(event) => onChange(formatPhone(event.target.value))}
+        placeholder="(11) 91234-5678"
+      />
+    );
+  }
+
+  if (question.type === "number") {
+    return (
+      <Input
+        id={`question-${question.id}`}
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={(event) => onChange(sanitizeNumberInput(event.target.value))}
+        placeholder="0"
+      />
+    );
+  }
+
+  if (question.type === "full_name") {
+    return (
+      <Input
+        id={`question-${question.id}`}
+        type="text"
+        autoComplete="name"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Seu nome completo"
+      />
     );
   }
 
@@ -217,6 +264,92 @@ function QuestionField({
       onChange={(event) => onChange(event.target.value)}
     />
   );
+}
+
+function RatingField({
+  questionId,
+  options,
+  columns,
+  value,
+  onChange,
+}: {
+  questionId: string;
+  options: number[];
+  columns: number;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div
+      id={`question-${questionId}`}
+      className="grid gap-2"
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+    >
+      {options.map((option) => {
+        const optionValue = String(option);
+
+        return (
+          <label
+            key={option}
+            className={`flex h-11 items-center justify-center rounded-md border text-sm font-semibold transition-colors ${
+              value === optionValue
+                ? "border-brand bg-brand-soft text-text-primary"
+                : "border-border bg-surface-muted text-text-secondary"
+            }`}
+          >
+            <input
+              type="radio"
+              name={`question-${questionId}`}
+              value={optionValue}
+              checked={value === optionValue}
+              onChange={(event) => onChange(event.target.value)}
+              className="sr-only"
+            />
+            {option}
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+
+  if (digits.length === 0) {
+    return "";
+  }
+
+  if (digits.length <= 2) {
+    return `(${digits}`;
+  }
+
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
+
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function sanitizeNumberInput(value: string): string {
+  // Aceita apenas dígitos e um único separador decimal (ponto ou vírgula).
+  const cleaned = value.replace(/[^\d.,]/g, "").replace(/,/g, ".");
+
+  if (cleaned === "") {
+    return "";
+  }
+
+  const [integerPart, ...decimalParts] = cleaned.split(".");
+
+  if (decimalParts.length === 0) {
+    return integerPart;
+  }
+
+  return `${integerPart}.${decimalParts.join("")}`;
 }
 
 function validateAnswers(questions: SurveyQuestion[], values: FormValues) {
@@ -263,6 +396,60 @@ function validateAnswers(questions: SurveyQuestion[], values: FormValues) {
       continue;
     }
 
+    if (question.type === "rating_10") {
+      const rating = Number(value);
+
+      if (!Number.isInteger(rating) || rating < 0 || rating > 10) {
+        return {
+          answers,
+          error: `Escolha uma nota de 0 a 10 para: ${question.title}.`,
+        };
+      }
+
+      answers[question.id] = rating;
+      continue;
+    }
+
+    if (question.type === "email") {
+      if (!isValidEmail(value)) {
+        return {
+          answers,
+          error: `Informe um e-mail válido para: ${question.title}.`,
+        };
+      }
+
+      answers[question.id] = value;
+      continue;
+    }
+
+    if (question.type === "phone") {
+      const digits = value.replace(/\D/g, "");
+
+      if (digits.length < 10 || digits.length > 11) {
+        return {
+          answers,
+          error: `Informe um telefone válido com DDD para: ${question.title}.`,
+        };
+      }
+
+      answers[question.id] = digits;
+      continue;
+    }
+
+    if (question.type === "number") {
+      const number = Number(value);
+
+      if (!Number.isFinite(number)) {
+        return {
+          answers,
+          error: `Informe um número válido para: ${question.title}.`,
+        };
+      }
+
+      answers[question.id] = number;
+      continue;
+    }
+
     answers[question.id] = value;
   }
 
@@ -270,6 +457,17 @@ function validateAnswers(questions: SurveyQuestion[], values: FormValues) {
     answers,
     error: null,
   };
+}
+
+function isValidEmail(value: string): boolean {
+  const email = value.trim();
+
+  if (email.length > 254) {
+    return false;
+  }
+
+  // Validação de formato básico e seguro, sem verificar existência do domínio.
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function getFriendlyDynamicResponseError(message: string) {

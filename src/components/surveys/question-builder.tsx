@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,7 @@ type QuestionFormState = {
   type: SurveyQuestionType;
   required: boolean;
   optionsText: string;
+  topic: string;
 };
 
 const defaultForm: QuestionFormState = {
@@ -51,6 +52,7 @@ const defaultForm: QuestionFormState = {
   type: "short_text",
   required: false,
   optionsText: "",
+  topic: "",
 };
 
 export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuilderProps) {
@@ -61,6 +63,7 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const editingQuestion = useMemo(
     () => questions.find((question) => question.id === editingQuestionId),
@@ -91,6 +94,19 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
     };
   }, [surveyId]);
 
+  useEffect(() => {
+    if (!isFormOpen) {
+      return;
+    }
+
+    // Após o formulário renderizar, rola suavemente até ele para que fique visível.
+    const frame = requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [isFormOpen]);
+
   function startCreate() {
     setForm(defaultForm);
     setEditingQuestionId(null);
@@ -106,6 +122,7 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
       type: question.type,
       required: question.required,
       optionsText: question.options.join("\n"),
+      topic: question.topic ?? "",
     });
     setEditingQuestionId(question.id);
     setIsFormOpen(true);
@@ -129,6 +146,7 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
     const title = form.title.trim();
     const description = form.description.trim() || null;
     const options = normalizeOptions(form.optionsText);
+    const topic = form.topic.trim() || null;
 
     if (title.length < 2) {
       setError("Escreva uma pergunta com pelo menos 2 caracteres.");
@@ -149,6 +167,7 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
           type: form.type,
           required: form.required,
           options: form.type === "single_choice" ? options : [],
+          topic,
         })
       : await createQuestion({
           survey_id: surveyId,
@@ -158,6 +177,7 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
           required: form.required,
           position: questions.length + 1,
           options: form.type === "single_choice" ? options : [],
+          topic,
         });
 
     if (result.error || !result.question) {
@@ -286,7 +306,11 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
         ) : null}
 
         {isFormOpen ? (
-          <form className="space-y-4 rounded-md border border-border p-4" onSubmit={handleSubmit}>
+          <form
+            ref={formRef}
+            className="scroll-mt-24 space-y-4 rounded-md border border-border p-4"
+            onSubmit={handleSubmit}
+          >
             <div className="space-y-2">
               <Label htmlFor="question-title">Pergunta</Label>
               <Input
@@ -308,6 +332,17 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
                 }
                 placeholder="Ajude o cliente a entender a pergunta, se precisar"
                 className="min-h-24"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="question-topic">Tópico</Label>
+              <Input
+                id="question-topic"
+                value={form.topic}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, topic: event.target.value }))
+                }
+                placeholder="Opcional: agrupe esta pergunta (ex: Atendimento)"
               />
             </div>
             <div className="grid gap-4 md:grid-cols-2">

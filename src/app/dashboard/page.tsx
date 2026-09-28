@@ -1,4 +1,4 @@
-import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
+import { DashboardWorkspace } from "@/components/dashboard/dashboard-workspace";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageContainer } from "@/components/layout/page-container";
 import { getCampaignStats } from "@/lib/campaigns";
@@ -21,7 +21,8 @@ export default async function DashboardPage() {
   return (
     <AppShell>
       <PageContainer size="wide">
-        <DashboardOverview
+        <DashboardWorkspace
+          companyId={company.id}
           surveys={surveys}
           totalResponses={totalResponses}
           totalCampaigns={totalCampaigns}

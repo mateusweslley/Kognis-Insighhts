@@ -33,9 +33,9 @@ import {
   surveyQuestionTemplates,
   type SurveyQuestionTemplateId,
 } from "@/lib/survey-question-templates";
-import { isValidSurveyStatus } from "@/lib/survey-utils";
-import type { Survey, SurveyStatus } from "@/types/survey";
-import { surveyStatusLabels, surveyStatuses } from "@/types/survey";
+import { isValidSurveyStatus, normalizeObjectiveNote, normalizeSurveyObjective } from "@/lib/survey-utils";
+import type { Survey, SurveyObjective, SurveyStatus } from "@/types/survey";
+import { surveyObjectiveLabels, surveyObjectives, surveyStatusLabels, surveyStatuses } from "@/types/survey";
 
 type SurveyManagerProps = {
   companyId: string;
@@ -47,12 +47,16 @@ type SurveyFormState = {
   title: string;
   description: string;
   status: SurveyStatus;
+  objective: SurveyObjective;
+  objectiveNote: string;
 };
 
 const defaultForm: SurveyFormState = {
   title: "",
   description: "",
   status: "draft",
+  objective: "undefined",
+  objectiveNote: "",
 };
 
 export function SurveyManager({ companyId, initialSurveys, initialError }: SurveyManagerProps) {
@@ -87,6 +91,10 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
     [nextStepSurveyId, surveys],
   );
 
+  function selectTemplate(templateId: SurveyQuestionTemplateId) {
+    setSelectedTemplateId(templateId);
+  }
+
   function startCreate() {
     if (initialError) {
       setError(initialError);
@@ -102,10 +110,14 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
   }
 
   function startEdit(survey: Survey) {
+    const objective = normalizeSurveyObjective(survey.objective);
+
     setForm({
       title: survey.title,
       description: survey.description ?? "",
       status: survey.status,
+      objective,
+      objectiveNote: objective === "other" ? normalizeObjectiveNote(survey.objective_note) ?? "" : "",
     });
     setEditingSurveyId(survey.id);
     setIsCreating(false);
@@ -142,6 +154,10 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
       return;
     }
 
+    const objective = normalizeSurveyObjective(form.objective);
+    const objectiveNote =
+      objective === "other" ? normalizeObjectiveNote(form.objectiveNote) : null;
+
     const supabase = createClient();
     const request = editingSurvey
       ? supabase
@@ -150,6 +166,8 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
             title,
             description,
             status: form.status,
+            objective,
+            objective_note: objectiveNote,
           })
           .eq("id", editingSurvey.id)
           .select("*")
@@ -161,6 +179,8 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
             title,
             description,
             status: form.status,
+            objective,
+            objective_note: objectiveNote,
           })
           .select("*")
           .single();
@@ -273,37 +293,6 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {!editingSurvey ? (
-                <div className="space-y-3">
-                  <div>
-                    <Label>O que você deseja descobrir?</Label>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Escolha um ponto de partida. Você poderá editar as perguntas depois.
-                    </p>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {surveyQuestionTemplates.map((template) => {
-                      const isSelected = selectedTemplateId === template.id;
-
-                      return (
-                        <button
-                          key={template.id}
-                          type="button"
-                          onClick={() => setSelectedTemplateId(template.id)}
-                          className={`rounded-md border p-4 text-left transition-colors ${
-                            isSelected
-                              ? "border-brand bg-brand-soft text-text-primary"
-                              : "border-border bg-surface-muted text-text-secondary hover:border-border-strong hover:text-text-primary"
-                          }`}
-                        >
-                          <span className="block text-sm font-semibold text-text-primary">{template.title}</span>
-                          <span className="mt-1 block text-sm leading-5">{template.description}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="survey-title">Título</Label>
                 <Input
@@ -328,6 +317,70 @@ export function SurveyManager({ companyId, initialSurveys, initialError }: Surve
                   placeholder="Conte rapidamente o objetivo da pesquisa"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="survey-objective">Objetivo da pesquisa</Label>
+                <Select
+                  id="survey-objective"
+                  value={form.objective}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      objective: normalizeSurveyObjective(event.target.value),
+                      objectiveNote: event.target.value === "other" ? current.objectiveNote : "",
+                    }))
+                  }
+                >
+                  {surveyObjectives.map((objective) => (
+                    <option key={objective} value={objective}>
+                      {surveyObjectiveLabels[objective]}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              {form.objective === "other" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="survey-objective-note">Descreva o objetivo</Label>
+                  <Input
+                    id="survey-objective-note"
+                    value={form.objectiveNote}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, objectiveNote: event.target.value }))
+                    }
+                    placeholder="Descreva brevemente o objetivo desta pesquisa"
+                  />
+                </div>
+              ) : null}
+              {!editingSurvey ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Como deseja começar?</Label>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Escolha um ponto de partida. Você poderá editar as perguntas depois.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {surveyQuestionTemplates.map((template) => {
+                      const isSelected = selectedTemplateId === template.id;
+
+                      return (
+                        <button
+                          key={template.id}
+                          type="button"
+                          onClick={() => selectTemplate(template.id)}
+                          className={`rounded-md border p-4 text-left transition-colors ${
+                            isSelected
+                              ? "border-brand bg-brand-soft text-text-primary"
+                              : "border-border bg-surface-muted text-text-secondary hover:border-border-strong hover:text-text-primary"
+                          }`}
+                        >
+                          <span className="block text-sm font-semibold text-text-primary">{template.title}</span>
+                          <span className="mt-1 block text-sm leading-5">{template.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="survey-status">Status</Label>
                 <Select
