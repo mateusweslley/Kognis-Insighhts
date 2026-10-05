@@ -8,7 +8,9 @@ import {
 } from "@/lib/responses";
 import { isDynamicResponseAnswers } from "@/lib/response-utils";
 import {
+  classifyNps,
   computeChoiceDistribution,
+  computeNps,
   computeRatingStats,
   computeResponseVolumeOverTime,
   computeTopicMetrics,
@@ -17,6 +19,8 @@ import {
 } from "@/lib/metrics/metrics-engine";
 import type {
   ChoiceDistribution,
+  NpsClassification,
+  NpsStats,
   PeriodMetrics,
   RatingStats,
   TimeBucket,
@@ -26,6 +30,7 @@ import type {
 } from "@/lib/metrics/types";
 import type { SurveyResponse } from "@/types/response";
 import type { SurveyQuestion } from "@/types/survey-question";
+import { extractResponseData, type ExtractedResponseData } from "@/lib/metrics/extract";
 
 export type SurveyMetrics = {
   rating: RatingStats;
@@ -97,6 +102,100 @@ export async function getCompanyMetrics(companyId: string): Promise<CompanyMetri
   return {
     totalResponses: responses.length,
     avgRating: ratingStats.average,
+    error: null,
+  };
+}
+
+// Disponibilidade do NPS em uma pesquisa. Não confundir "sem dados" com "sem pergunta".
+export type NpsAvailability =
+  | "available"
+  | "ambiguous"
+  | "no_question"
+  | "no_data";
+
+export type SurveyNps = {
+  availability: NpsAvailability;
+  stats: NpsStats;
+  classification: NpsClassification | null;
+};
+
+export type SurveyInsight = {
+  totalResponses: number;
+  avgRating: number | null;
+  nps: SurveyNps;
+  error: string | null;
+};
+
+// Identifica de forma determinística qual pergunta (0–10) alimenta o NPS.
+//
+// - 0 perguntas `rating_10`  -> no_question
+// - exatamente 1             -> available (usa essa pergunta)
+// - 2 ou mais                -> ambiguous (não escolhe arbitrariamente)
+export function identifyNpsQuestion(
+  questions: SurveyQuestion[],
+): { availability: NpsAvailability; questionId: string | null } {
+  const rating10 = questions.filter((question) => question.type === "rating_10");
+
+  if (rating10.length === 0) {
+    return { availability: "no_question", questionId: null };
+  }
+
+  if (rating10.length > 1) {
+    return { availability: "ambiguous", questionId: null };
+  }
+
+  return { availability: "available", questionId: rating10[0].id };
+}
+
+// Extrai os valores 0–10 de uma pergunta `rating_10` a partir dos dados já
+// extraídos, reutilizando a infraestrutura de extração existente.
+export function extractNpsValues(
+  data: ExtractedResponseData,
+  questionId: string | null,
+): Array<string | number> {
+  if (!questionId) return [];
+  return data.valuesByQuestion.get(questionId) ?? [];
+}
+
+// Insight unificado para o dashboard MVP: respostas, satisfação e NPS.
+export async function getSurveyInsight(surveyId: string): Promise<SurveyInsight> {
+  const questionsResult = await getSurveyQuestionsForResponses(surveyId);
+  if (questionsResult.error) {
+    return emptySurveyInsight(questionsResult.error);
+  }
+
+  const responsesResult = await getResponsesBySurveyId(surveyId);
+  if (responsesResult.error) {
+    return emptySurveyInsight(responsesResult.error);
+  }
+
+  const questions = questionsResult.questions;
+  const responses = responsesResult.responses;
+
+  const data = extractResponseData(responses, questions);
+
+  const identification = identifyNpsQuestion(questions);
+  const { availability, questionId } = identification;
+
+  let stats: NpsStats = { count: 0, promoters: 0, passives: 0, detractors: 0, score: null };
+  if (availability === "available") {
+    stats = computeNps(extractNpsValues(data, questionId));
+  } else if (availability === "ambiguous") {
+    stats = { count: 0, promoters: 0, passives: 0, detractors: 0, score: null };
+  }
+
+  // Se há pergunta compatível mas zero respostas válidas, o estado é "no_data".
+  const resolvedAvailability: NpsAvailability =
+    availability === "available" && stats.count === 0 ? "no_data" : availability;
+
+  return {
+    totalResponses: data.totalResponses,
+    avgRating: computeRatingStats(data.legacyRatings).average,
+    nps: {
+      availability: resolvedAvailability,
+      stats,
+      classification: classifyNps(stats.score),
+    },
     error: null,
   };
 }
@@ -198,6 +297,19 @@ function emptySurveyMetrics(error: string | null): SurveyMetrics {
     choices: {},
     volume: [],
     totalResponses: 0,
+    error,
+  };
+}
+
+function emptySurveyInsight(error: string | null): SurveyInsight {
+  return {
+    totalResponses: 0,
+    avgRating: null,
+    nps: {
+      availability: "no_data",
+      stats: { count: 0, promoters: 0, passives: 0, detractors: 0, score: null },
+      classification: null,
+    },
     error,
   };
 }

@@ -4,6 +4,8 @@
 
 import type {
   ChoiceDistribution,
+  NpsClassification,
+  NpsStats,
   NumericStats,
   PeriodMetrics,
   RatingStats,
@@ -202,6 +204,108 @@ export function computeTrend(current: PeriodMetrics, previous: PeriodMetrics | n
     deltaAbsolute,
     deltaPercent,
     direction: deltaAbsolute > 0 ? "up" : deltaAbsolute < 0 ? "down" : "flat",
+  };
+}
+
+// NPS (Net Promoter Score) sobre a escala 0–10.
+//
+// - Promotores: 9–10
+// - Neutros:    7–8
+// - Detratores: 0–6
+// - Score:      (% promotores) - (% detratores), arredondado para inteiro.
+//
+// Valores fora da escala ou não numéricos são ignorados. Sem respostas válidas,
+// `score` é null (não se traduz ausência de dados em NPS 0).
+export function computeNps(values: Array<string | number>): NpsStats {
+  const valid = values
+    .map((value) => toNpsNumber(value))
+    .filter((value): value is number => value !== null);
+
+  let promoters = 0;
+  let passives = 0;
+  let detractors = 0;
+
+  for (const value of valid) {
+    if (value >= 9) promoters += 1;
+    else if (value >= 7) passives += 1;
+    else detractors += 1;
+  }
+
+  const count = valid.length;
+
+  if (count === 0) {
+    return { count: 0, promoters: 0, passives: 0, detractors: 0, score: null };
+  }
+
+  const score = Math.round(((promoters - detractors) / count) * 100);
+
+  return { count, promoters, passives, detractors, score };
+}
+
+// Converte um valor de resposta em número 0–10 válido para NPS, ou null.
+function toNpsNumber(value: string | number): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "boolean") return null;
+
+  const number = typeof value === "number" ? value : Number(String(value).trim());
+
+  if (!Number.isFinite(number)) return null;
+  if (!Number.isInteger(number)) return null;
+  if (number < 0 || number > 10) return null;
+
+  return number;
+}
+
+// Convenção de classificação para UX. Faixas:
+//   < 0   → Crítico
+//   0–30  → Atenção
+//   31–50 → Bom
+//   51–75 → Muito bom
+//   76–100→ Excelente
+export function classifyNps(score: number | null): NpsClassification | null {
+  if (score === null) return null;
+
+  if (score < 0) {
+    return {
+      band: "critical",
+      label: "Crítico",
+      insight:
+        "Seu NPS está negativo. Os detratores representam uma parcela maior das respostas e merecem atenção.",
+    };
+  }
+
+  if (score <= 30) {
+    return {
+      band: "attention",
+      label: "Atenção",
+      insight:
+        "Seu NPS está em uma faixa baixa. A experiência precisa de ajustes para reduzir a insatisfação.",
+    };
+  }
+
+  if (score <= 50) {
+    return {
+      band: "good",
+      label: "Bom",
+      insight:
+        "Seu NPS está em uma faixa positiva. A maioria das respostas indica uma percepção favorável, mas ainda existe espaço para melhorar a experiência.",
+    };
+  }
+
+  if (score <= 75) {
+    return {
+      band: "very_good",
+      label: "Muito bom",
+      insight:
+        "Seu NPS está em uma faixa muito boa. A maior parte dos respondentes tende a recomendar a sua marca.",
+    };
+  }
+
+  return {
+    band: "excellent",
+    label: "Excelente",
+    insight:
+      "Seu NPS está em uma faixa excelente. A maior parte dos respondentes demonstra forte disposição para recomendar.",
   };
 }
 

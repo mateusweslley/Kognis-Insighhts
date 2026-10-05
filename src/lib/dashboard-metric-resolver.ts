@@ -3,6 +3,7 @@
 
 import {
   computeChoiceDistribution,
+  computeNps,
   computeNumericStats,
   computeRatingStats,
   computeResponseVolumeOverTime,
@@ -45,9 +46,7 @@ export function resolveMetric(
       return resolveTopics(data, questions);
 
     case "nps":
-      // Pendência: o Metrics Engine ainda não possui fórmula de NPS.
-      // Retorna vazio de forma explícita em vez de inventar valor.
-      return { kind: "kpi", value: null, label: widget.title };
+      return resolveNps(widget, data, questions);
 
     default:
       return { kind: "kpi", value: null, label: widget.title };
@@ -151,4 +150,37 @@ function resolveTopics(
       avgRating: metric.avgRating,
     })),
   };
+}
+
+// Resolve NPS com identificação determinística da pergunta 0–10:
+// - usa o `question_id` do widget se ele for do tipo `rating_10`;
+// - senão, exige exatamente uma pergunta `rating_10` na pesquisa.
+// Múltiplas perguntas compatíveis ou ausência delas → NPS indisponível (null).
+function resolveNps(
+  widget: DashboardWidget,
+  data: ExtractedResponseData,
+  questions: SurveyQuestion[],
+): MetricResult {
+  let questionId: string | null = null;
+
+  if (widget.question_id) {
+    const target = questions.find((q) => q.id === widget.question_id);
+    if (target?.type === "rating_10") {
+      questionId = target.id;
+    }
+  } else {
+    const rating10 = questions.filter((q) => q.type === "rating_10");
+    if (rating10.length === 1) {
+      questionId = rating10[0].id;
+    }
+  }
+
+  if (!questionId) {
+    return { kind: "kpi", value: null, label: widget.title };
+  }
+
+  const values = data.valuesByQuestion.get(questionId) ?? [];
+  const stats = computeNps(values);
+
+  return { kind: "kpi", value: stats.score, label: widget.title };
 }

@@ -353,7 +353,7 @@ export function CampaignManager({
           .from("campaigns")
           .update(campaignColumns)
           .eq("id", editingCampaign.id)
-          .select("*, surveys(title)")
+          .select("*")
           .single()
       : supabase
           .from("campaigns")
@@ -361,7 +361,7 @@ export function CampaignManager({
             company_id: companyId,
             ...campaignColumns,
           })
-          .select("*, surveys(title)")
+          .select("*")
           .single();
 
     const { data, error: saveError } = await request;
@@ -373,9 +373,7 @@ export function CampaignManager({
       return;
     }
 
-    const savedCampaignRow = data as CampaignWithSurvey & {
-      surveys?: { title: string } | null;
-    };
+    const savedCampaignRow = data as CampaignWithSurvey;
 
     // S3.3 — Sincronizar campaign_surveys (fonte prioritária) com campaigns.survey_id (legado)
     await supabase.from("campaign_surveys").delete().eq("campaign_id", savedCampaignRow.id);
@@ -428,10 +426,9 @@ export function CampaignManager({
       await supabase.from("campaign_rewards").delete().eq("campaign_id", savedCampaignRow.id);
     }
 
-    const resolvedSurveyTitle =
-      (payload.survey_id ? surveyTitleById.get(payload.survey_id) : null) ??
-      savedCampaignRow.surveys?.title ??
-      null;
+    const resolvedSurveyTitle = payload.survey_id
+      ? surveyTitleById.get(payload.survey_id) ?? null
+      : null;
 
     const savedCampaign: CampaignWithSurvey = {
       ...savedCampaignRow,
@@ -490,7 +487,7 @@ export function CampaignManager({
       .from("campaigns")
       .update({ status: nextStatus })
       .eq("id", campaign.id)
-      .select("*, surveys(title)")
+      .select("*")
       .single();
 
     if (statusError) {
@@ -500,7 +497,7 @@ export function CampaignManager({
       return;
     }
 
-    const updatedRow = data as CampaignWithSurvey & { surveys?: { title: string } | null };
+    const updatedRow = data as CampaignWithSurvey;
     const updatedCampaign: CampaignWithSurvey = {
       ...campaign,
       ...updatedRow,
@@ -508,7 +505,6 @@ export function CampaignManager({
       linked_survey_id: effectiveSurveyId,
       survey_title:
         (effectiveSurveyId ? surveyTitleById.get(effectiveSurveyId) : null) ??
-        updatedRow.surveys?.title ??
         campaign.survey_title ??
         null,
       reward: campaign.reward ?? null,

@@ -56,3 +56,29 @@ export type NumericStats = {
   min: number | null;
   max: number | null;
 };
+
+// NPS (Net Promoter Score). A escala admitida é 0–10.
+export type NpsBucketCounts = {
+  promoters: number;
+  passives: number;
+  detractors: number;
+};
+
+export type NpsStats = {
+  // total de respostas válidas usadas no cálculo.
+  count: number;
+  promoters: number;
+  passives: number;
+  detractors: number;
+  // -100 a +100, arredondado para inteiro. null quando não há respostas.
+  score: number | null;
+};
+
+// A classificação de NPS é uma convenção de UX (não é verdade científica).
+export type NpsBand = "critical" | "attention" | "good" | "very_good" | "excellent";
+
+export type NpsClassification = {
+  band: NpsBand;
+  label: string;
+  insight: string;
+};

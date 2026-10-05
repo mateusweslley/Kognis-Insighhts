@@ -22,7 +22,7 @@ export async function getCampaignsByCompany(companyId: string): Promise<Campaign
 
   const { data, error } = await supabase
     .from("campaigns")
-    .select("*, surveys(title)")
+    .select("*")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
@@ -34,7 +34,7 @@ export async function getCampaignsByCompany(companyId: string): Promise<Campaign
     };
   }
 
-  const rawCampaigns = (data ?? []) as Array<Campaign & { surveys?: { title: string } | null }>;
+  const rawCampaigns = (data ?? []) as Campaign[];
   if (rawCampaigns.length === 0) {
     return {
       campaigns: [],
@@ -88,10 +88,7 @@ export async function getCampaignsByCompany(companyId: string): Promise<Campaign
   return {
     campaigns: rawCampaigns.map((campaign) => {
       const effectiveSurveyId = resolveEffectiveCampaignSurveyId(campaign, campaignSurveysList);
-      const resolvedTitle =
-        (effectiveSurveyId ? surveyTitleMap.get(effectiveSurveyId) : null) ??
-        campaign.surveys?.title ??
-        null;
+      const resolvedTitle = effectiveSurveyId ? surveyTitleMap.get(effectiveSurveyId) ?? null : null;
 
       return {
         ...campaign,
@@ -111,7 +108,7 @@ export async function getCampaignById(campaignId: string): Promise<CampaignResul
 
   const { data, error } = await supabase
     .from("campaigns")
-    .select("*, surveys(title)")
+    .select("*")
     .eq("id", campaignId)
     .maybeSingle();
 
@@ -130,12 +127,12 @@ export async function getCampaignById(campaignId: string): Promise<CampaignResul
     };
   }
 
-  const campaign = data as Campaign & { surveys?: { title: string } | null };
+  const campaign = data as Campaign;
 
   return {
     campaign: {
       ...campaign,
-      survey_title: campaign.surveys?.title ?? null,
+      survey_title: null,
     },
     error: null,
   };
@@ -181,7 +178,7 @@ export async function createCampaign(campaign: {
         ? { completion_message: campaign.completionMessage }
         : {}),
     })
-    .select("*, surveys(title)")
+    .select("*")
     .single();
 
   if (error) {
@@ -192,12 +189,12 @@ export async function createCampaign(campaign: {
     };
   }
 
-  const createdCampaign = data as Campaign & { surveys?: { title: string } | null };
+  const createdCampaign = data as Campaign;
 
   return {
     campaign: {
       ...createdCampaign,
-      survey_title: createdCampaign.surveys?.title ?? null,
+      survey_title: null,
     },
     error: null,
   };
@@ -243,7 +240,7 @@ export async function updateCampaign(campaign: {
         : {}),
     })
     .eq("id", campaign.id)
-    .select("*, surveys(title)")
+    .select("*")
     .single();
 
   if (error) {
@@ -254,12 +251,12 @@ export async function updateCampaign(campaign: {
     };
   }
 
-  const updatedCampaign = data as Campaign & { surveys?: { title: string } | null };
+  const updatedCampaign = data as Campaign;
 
   return {
     campaign: {
       ...updatedCampaign,
-      survey_title: updatedCampaign.surveys?.title ?? null,
+      survey_title: null,
     },
     error: null,
   };
@@ -272,7 +269,7 @@ export async function archiveCampaign(campaignId: string) {
     .from("campaigns")
     .update({ status: "archived" })
     .eq("id", campaignId)
-    .select("*, surveys(title)")
+    .select("*")
     .single();
 
   if (error) {
@@ -283,12 +280,12 @@ export async function archiveCampaign(campaignId: string) {
     };
   }
 
-  const archivedCampaign = data as Campaign & { surveys?: { title: string } | null };
+  const archivedCampaign = data as Campaign;
 
   return {
     campaign: {
       ...archivedCampaign,
-      survey_title: archivedCampaign.surveys?.title ?? null,
+      survey_title: null,
     },
     error: null,
   };

@@ -14,7 +14,6 @@ import {
   UNIQUE_CODE_ALPHABET,
 } from "@/lib/campaign-issuance-utils";
 import {
-  isMissingRpcFunctionError,
   normalizeGatewayRpcData,
   submitPublicSurveyResponse,
   type SupabaseGatewayClient,
@@ -894,7 +893,7 @@ describe("Sprint 2 — Matriz Obrigatória de 16 Cenários (Submission Gateway +
     expect(sanitized.reward).not.toHaveProperty("owner_id");
   });
 
-  it("aciona fallback de insert direto APENAS quando a função RPC ainda não existe (PGRST202)", async () => {
+  it("quando a RPC não existe (PGRST202), retorna erro controlado e NÃO faz insert direto em responses", async () => {
     const insertSpy = vi.fn(async () => ({ error: null }));
     const fallbackClient: SupabaseGatewayClient = {
       rpc: async () => ({
@@ -909,20 +908,7 @@ describe("Sprint 2 — Matriz Obrigatória de 16 Cenários (Submission Gateway +
       }),
     };
 
-    expect(
-      isMissingRpcFunctionError({
-        code: "PGRST202",
-        message: "Could not find the function",
-      }),
-    ).toBe(true);
-    expect(
-      isMissingRpcFunctionError({
-        code: "P0001",
-        message: "Survey is not active",
-      }),
-    ).toBe(false);
-
-    const fallbackResult = await submitPublicSurveyResponse(
+    const result = await submitPublicSurveyResponse(
       {
         surveyId: "surv-1",
         answers: dynamicValidAnswers,
@@ -931,8 +917,44 @@ describe("Sprint 2 — Matriz Obrigatória de 16 Cenários (Submission Gateway +
       fallbackClient,
     );
 
-    expect(fallbackResult.submitted).toBe(true);
-    expect(fallbackResult.reward).toBeNull();
-    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(result.submitted).toBe(false);
+    expect(result.reward).toBeNull();
+    expect(result.error).toBe(
+      "Não foi possível registrar sua resposta agora. Tente novamente em alguns instantes.",
+    );
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
+  it("quando a RPC não existe (42883), retorna erro controlado e não expõe detalhes internos", async () => {
+    const insertSpy = vi.fn(async () => ({ error: null }));
+    const fallbackClient: SupabaseGatewayClient = {
+      rpc: async () => ({
+        data: null,
+        error: {
+          code: "42883",
+          message: 'function public.submit_public_survey_response(uuid, jsonb, text, text) does not exist',
+        },
+      }),
+      from: () => ({
+        insert: insertSpy,
+      }),
+    };
+
+    const result = await submitPublicSurveyResponse(
+      {
+        surveyId: "surv-1",
+        answers: dynamicValidAnswers,
+        submissionKey: "sub-fallback-2",
+      },
+      fallbackClient,
+    );
+
+    expect(result.submitted).toBe(false);
+    expect(result.reward).toBeNull();
+    expect(result.error).not.toContain("PGRST202");
+    expect(result.error).not.toContain("42883");
+    expect(result.error).not.toContain("submit_public_survey_response");
+    expect(result.error).not.toContain("does not exist");
+    expect(insertSpy).not.toHaveBeenCalled();
   });
 });

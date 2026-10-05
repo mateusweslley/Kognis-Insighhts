@@ -144,10 +144,44 @@ describe("resolveMetric", () => {
     }
   });
 
-  it("nps retorna valor nulo (pendência de fórmula)", () => {
+  it("nps retorna valor nulo quando não há pergunta rating_10", () => {
     const widget = makeWidget({ metric: "nps", question_id: null });
     const result = resolveMetric(widget, extractResponseData([], []), []);
 
+    expect(result.kind).toBe("kpi");
+    if (result.kind === "kpi") expect(result.value).toBeNull();
+  });
+
+  it("nps calcula a partir de uma pergunta rating_10", () => {
+    const questions = [makeQuestion({ id: "q1", type: "rating_10" })];
+    const responses: SurveyResponse[] = [
+      { id: "r1", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: 9 } } },
+      { id: "r2", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: 10 } } },
+      { id: "r3", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: 0 } } },
+    ];
+    const data = extractResponseData(responses, questions);
+    const widget = makeWidget({ metric: "nps", question_id: null, visualization: "kpi" });
+
+    const result = resolveMetric(widget, data, questions);
+    expect(result.kind).toBe("kpi");
+    if (result.kind === "kpi") {
+      // 2 promotores, 1 detrator → (2 - 1) / 3 * 100 = 33.33 → 33
+      expect(result.value).toBe(33);
+    }
+  });
+
+  it("nps retorna nulo com múltiplas perguntas rating_10 (ambíguo)", () => {
+    const questions = [
+      makeQuestion({ id: "q1", type: "rating_10" }),
+      makeQuestion({ id: "q2", type: "rating_10" }),
+    ];
+    const responses: SurveyResponse[] = [
+      { id: "r1", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: 9, q2: 9 } } },
+    ];
+    const data = extractResponseData(responses, questions);
+    const widget = makeWidget({ metric: "nps", question_id: null, visualization: "kpi" });
+
+    const result = resolveMetric(widget, data, questions);
     expect(result.kind).toBe("kpi");
     if (result.kind === "kpi") expect(result.value).toBeNull();
   });

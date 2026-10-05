@@ -88,35 +88,9 @@ export async function submitPublicSurveyResponse(
   });
 
   if (error) {
-    // FALLBACK TEMPORÁRIO DE TRANSIÇÃO DE DEPLOYMENT:
-    // Ativado EXCLUSIVAMENTE quando a migration `supabase/2026_submission_gateway.sql`
-    // ainda não foi aplicada no banco remoto (PGRST202 / 42883).
-    // Nunca é usado para mascarar erros normais de negócio, validação ou permissão.
-    if (isMissingRpcFunctionError(error)) {
-      const { error: insertError } = await supabase.from("responses").insert({
-        survey_id: surveyId,
-        answers: input.answers,
-      });
-
-      if (insertError) {
-        return {
-          submitted: false,
-          responseId: null,
-          completionMessage: null,
-          reward: null,
-          error: getFriendlySubmissionError(insertError.message, insertError.code),
-        };
-      }
-
-      return {
-        submitted: true,
-        responseId: null,
-        completionMessage: null,
-        reward: null,
-        error: null,
-      };
-    }
-
+    // A RPC é a única porta de escrita pública. Nenhum insert direto em `responses`
+    // é permitido aqui: se a RPC não estiver disponível (migration não aplicada),
+    // o erro é devolvido de forma controlada para a UI.
     return {
       submitted: false,
       responseId: null,
@@ -151,24 +125,6 @@ function isValidAnswersPayload(answers: ResponseAnswers | unknown): answers is R
     Number.isInteger(legacy.rating) &&
     legacy.rating >= 1 &&
     legacy.rating <= 5
-  );
-}
-
-/**
- * Detecta exclusivamente o erro de função RPC ausente no schema cache do PostgREST
- * ou no catálogo do PostgreSQL (transição de migration).
- */
-export function isMissingRpcFunctionError(error: RpcErrorLike): boolean {
-  const code = error.code ?? "";
-  const message = (error.message ?? "").toLowerCase();
-
-  if (code === "PGRST202" || code === "42883") {
-    return true;
-  }
-
-  return (
-    message.includes("could not find the function") &&
-    message.includes("submit_public_survey_response")
   );
 }
 
@@ -273,5 +229,5 @@ export function getFriendlySubmissionError(message: string, code?: string): stri
     return "Esta pesquisa não está aceitando respostas no momento.";
   }
 
-  return "Não foi possível enviar sua resposta agora. Tente novamente.";
+  return "Não foi possível registrar sua resposta agora. Tente novamente em alguns instantes.";
 }

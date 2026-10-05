@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  getFriendlySignInError,
+  getFriendlySignUpError,
+  resolveSignUpDisposition,
+} from "@/lib/auth-utils";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthCardProps = {
@@ -23,6 +28,83 @@ export function AuthCard({ mode }: AuthCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
+
+  async function handleSignUp() {
+    const supabase = createClient();
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+
+    if (signUpError) {
+      setError(getFriendlySignUpError(signUpError.message).message);
+      setIsLoading(false);
+      return;
+    }
+
+    const disposition = resolveSignUpDisposition({
+      hasSession: Boolean(data.session),
+      hasUser: Boolean(data.user),
+    });
+
+    if (disposition.state === "signed_in") {
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
+
+    setNeedsEmailConfirmation(true);
+    setMessage(disposition.message);
+    setIsLoading(false);
+  }
+
+  async function handleResendConfirmation() {
+    setIsResendingConfirmation(true);
+    setError(null);
+
+    const supabase = createClient();
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+
+    if (resendError) {
+      setError(getFriendlySignUpError(resendError.message).message);
+      setIsResendingConfirmation(false);
+      return;
+    }
+
+    setMessage(
+      "Reenviamos o link de confirmação para seu e-mail. Confirme sua conta para continuar no Kognis Insights.",
+    );
+    setIsResendingConfirmation(false);
+  }
+
+  async function handleSignIn() {
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError(getFriendlySignInError(signInError.message));
+      setIsLoading(false);
+      return;
+    }
+
+    router.push("/dashboard");
+    router.refresh();
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,47 +112,65 @@ export function AuthCard({ mode }: AuthCardProps) {
     setError(null);
     setMessage(null);
 
-    const supabase = createClient();
-
     if (isSignup) {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-
-      if (signUpError) {
-        setError(getFriendlyAuthError(signUpError.message));
-        setIsLoading(false);
-        return;
-      }
-
-      if (data.session) {
-        router.push("/dashboard");
-        router.refresh();
-        return;
-      }
-
-      setMessage("Conta criada. Confira seu e-mail para confirmar o acesso.");
-      setIsLoading(false);
+      await handleSignUp();
       return;
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    await handleSignIn();
+  }
 
-    if (signInError) {
-      setError(getFriendlyAuthError(signInError.message));
-      setIsLoading(false);
-      return;
-    }
-
-    router.push("/dashboard");
+  function handleGoToLogin() {
+    router.push("/login");
     router.refresh();
+  }
+
+  if (isSignup && needsEmailConfirmation) {
+    return (
+      <main className="grid min-h-screen place-items-center px-6 py-10">
+        <div className="w-full max-w-md">
+          <Link href="/" className="mb-8 flex justify-center" aria-label="Ir para o início">
+            <BrandMark />
+          </Link>
+          <Card>
+            <CardHeader>
+              <CardTitle>Confirme seu e-mail</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm leading-6 text-muted-foreground">
+                Enviamos um link de confirmação para seu e-mail. Confirme sua conta para
+                continuar no Kognis Insights.
+              </p>
+
+              {message ? (
+                <p className="rounded-md border border-kognis-teal/30 bg-kognis-teal/10 px-3 py-2 text-sm text-white">
+                  {message}
+                </p>
+              ) : null}
+
+              {error ? (
+                <p className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+                  {error}
+                </p>
+              ) : null}
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={handleResendConfirmation}
+                  disabled={isResendingConfirmation}
+                >
+                  {isResendingConfirmation ? "Reenviando..." : "Reenviar e-mail de confirmação"}
+                </Button>
+                <Button variant="ghost" onClick={handleGoToLogin}>
+                  Voltar para o login
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -136,26 +236,4 @@ export function AuthCard({ mode }: AuthCardProps) {
       </div>
     </main>
   );
-}
-
-function getFriendlyAuthError(message: string) {
-  const normalizedMessage = message.toLowerCase();
-
-  if (normalizedMessage.includes("invalid login credentials")) {
-    return "E-mail ou senha incorretos. Confira os dados e tente novamente.";
-  }
-
-  if (normalizedMessage.includes("email not confirmed")) {
-    return "Confirme seu e-mail antes de entrar.";
-  }
-
-  if (normalizedMessage.includes("user already registered")) {
-    return "Este e-mail já tem uma conta. Tente entrar pela tela de login.";
-  }
-
-  if (normalizedMessage.includes("password")) {
-    return "Use uma senha com pelo menos 6 caracteres.";
-  }
-
-  return "Não conseguimos concluir a autenticação agora. Tente novamente.";
 }
