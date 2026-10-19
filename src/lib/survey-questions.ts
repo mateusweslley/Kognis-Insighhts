@@ -15,6 +15,103 @@ type SurveyQuestionMutationResult = {
   error: string | null;
 };
 
+type PrimaryQuestionResult = {
+  primaryQuestionId: string | null;
+  error: string | null;
+};
+
+type PrimaryQuestionValidationInput = {
+  id: string;
+  survey_id: string;
+  type: string;
+} | null;
+
+export function validatePrimaryQuestion(
+  question: PrimaryQuestionValidationInput,
+  surveyId: string,
+): string | null {
+  if (!question) {
+    return "A pergunta selecionada não foi encontrada nesta pesquisa.";
+  }
+
+  if (question.survey_id !== surveyId) {
+    return "A pergunta principal precisa pertencer a esta pesquisa.";
+  }
+
+  if (question.type !== "rating") {
+    return "A pergunta principal precisa ser do tipo avaliação de 1 a 5.";
+  }
+
+  return null;
+}
+
+export async function getPrimaryQuestionId(surveyId: string): Promise<PrimaryQuestionResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("surveys")
+    .select("primary_question_id")
+    .eq("id", surveyId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao carregar a pergunta principal:", error);
+    return { primaryQuestionId: null, error: getFriendlyQuestionError(error.message, error.code) };
+  }
+
+  if (!data) {
+    return { primaryQuestionId: null, error: "Pesquisa não encontrada ou sem permissão de acesso." };
+  }
+
+  return { primaryQuestionId: data.primary_question_id, error: null };
+}
+
+export async function setPrimaryQuestionId(
+  surveyId: string,
+  questionId: string | null,
+): Promise<PrimaryQuestionResult> {
+  const supabase = createClient();
+
+  if (questionId !== null) {
+    const { data: question, error: questionError } = await supabase
+      .from("survey_questions")
+      .select("id, survey_id, type")
+      .eq("id", questionId)
+      .eq("survey_id", surveyId)
+      .maybeSingle();
+
+    if (questionError) {
+      console.error("Erro ao validar a pergunta principal:", questionError);
+      return {
+        primaryQuestionId: null,
+        error: getFriendlyQuestionError(questionError.message, questionError.code),
+      };
+    }
+
+    const validationError = validatePrimaryQuestion(question, surveyId);
+    if (validationError) {
+      return { primaryQuestionId: null, error: validationError };
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("surveys")
+    .update({ primary_question_id: questionId })
+    .eq("id", surveyId)
+    .select("primary_question_id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao salvar a pergunta principal:", error);
+    return { primaryQuestionId: null, error: getFriendlyQuestionError(error.message, error.code) };
+  }
+
+  if (!data) {
+    return { primaryQuestionId: null, error: "Pesquisa não encontrada ou sem permissão para alterá-la." };
+  }
+
+  return { primaryQuestionId: data.primary_question_id, error: null };
+}
+
 export async function getSurveyQuestions(surveyId: string): Promise<SurveyQuestionsResult> {
   const supabase = createClient();
 
@@ -75,6 +172,29 @@ export async function updateQuestion(
   question: SurveyQuestionUpdate,
 ): Promise<SurveyQuestionResult> {
   const supabase = createClient();
+
+  if (question.type && question.type !== "rating") {
+    const { data: primarySurvey, error: primarySurveyError } = await supabase
+      .from("surveys")
+      .select("id")
+      .eq("primary_question_id", questionId)
+      .maybeSingle();
+
+    if (primarySurveyError) {
+      console.error("Erro ao verificar a configuração principal:", primarySurveyError);
+      return {
+        question: null,
+        error: getFriendlyQuestionError(primarySurveyError.message, primarySurveyError.code),
+      };
+    }
+
+    if (primarySurvey) {
+      return {
+        question: null,
+        error: "Remova esta pergunta da configuração principal antes de alterar seu tipo.",
+      };
+    }
+  }
 
   const { data, error } = await supabase
     .from("survey_questions")
@@ -167,11 +287,19 @@ function normalizeTopic(topic: unknown): string | null {
 function getFriendlyQuestionError(message: string, code?: string) {
   const normalizedMessage = message.toLowerCase();
 
+  if (code === "42703" || normalizedMessage.includes("primary_question_id")) {
+    return "A configuração da pergunta principal ainda não está disponível. Aplique a migration supabase/014_primary_survey_question.sql e tente novamente.";
+  }
+
   if (code === "42P01" || normalizedMessage.includes("does not exist")) {
-    return "A tabela de perguntas ainda nao foi criada no Supabase. Aplique o SQL de supabase/survey_questions.sql e recarregue esta pagina.";
+    return "A tabela de perguntas ainda nao foi criada no Supabase. Aplique o SQL de supabase/003_survey_questions.sql e recarregue esta pagina.";
   }
 
   if (code === "23514") {
+    if (normalizedMessage.includes("primary question")) {
+      return "A pergunta principal precisa ser uma avaliação de 1 a 5 pertencente a esta pesquisa.";
+    }
+
     return "Revise a pergunta, o tipo e as opcoes antes de salvar.";
   }
 

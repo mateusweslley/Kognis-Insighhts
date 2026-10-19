@@ -20,6 +20,7 @@ export type Survey = {
   title: string;
   description: string | null;
   status: SurveyStatus;
+  primary_question_id: string | null;
   objective?: SurveyObjective | null;
   objective_note?: string | null;
   created_at: string;

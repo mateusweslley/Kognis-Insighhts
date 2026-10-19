@@ -21,11 +21,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { PrimaryQuestionSetting } from "@/components/surveys/primary-question-setting";
 import {
   createQuestion,
   deleteQuestion,
+  getPrimaryQuestionId,
   getSurveyQuestions,
   reorderQuestions,
+  setPrimaryQuestionId as savePrimaryQuestionId,
   updateQuestion,
 } from "@/lib/survey-questions";
 import type { SurveyQuestion, SurveyQuestionType } from "@/types/survey-question";
@@ -61,6 +64,12 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [primaryQuestionId, setPrimaryQuestionId] = useState<string | null>(null);
+  const [savedPrimaryQuestionId, setSavedPrimaryQuestionId] = useState<string | null>(null);
+  const [isPrimaryQuestionLoading, setIsPrimaryQuestionLoading] = useState(true);
+  const [isPrimaryQuestionSaving, setIsPrimaryQuestionSaving] = useState(false);
+  const [primaryQuestionError, setPrimaryQuestionError] = useState<string | null>(null);
+  const [primaryQuestionMessage, setPrimaryQuestionMessage] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -73,26 +82,60 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
   useEffect(() => {
     let shouldUpdate = true;
 
-    async function loadQuestions() {
+    async function loadConfiguration() {
       setIsLoading(true);
       setError(null);
-      const result = await getSurveyQuestions(surveyId);
+      setIsPrimaryQuestionLoading(true);
+      setPrimaryQuestionError(null);
+      const [questionsResult, primaryQuestionResult] = await Promise.all([
+        getSurveyQuestions(surveyId),
+        getPrimaryQuestionId(surveyId),
+      ]);
 
       if (!shouldUpdate) {
         return;
       }
 
-      setQuestions(result.questions);
-      setError(result.error);
+      setQuestions(questionsResult.questions);
+      setError(questionsResult.error);
+      setPrimaryQuestionError(primaryQuestionResult.error);
+      if (!primaryQuestionResult.error) {
+        setPrimaryQuestionId(primaryQuestionResult.primaryQuestionId);
+        setSavedPrimaryQuestionId(primaryQuestionResult.primaryQuestionId);
+      }
+      setIsPrimaryQuestionLoading(false);
       setIsLoading(false);
     }
 
-    loadQuestions();
+    loadConfiguration();
 
     return () => {
       shouldUpdate = false;
     };
   }, [surveyId]);
+
+  async function savePrimaryQuestion() {
+    setIsPrimaryQuestionSaving(true);
+    setPrimaryQuestionError(null);
+    setPrimaryQuestionMessage(null);
+
+    const result = await savePrimaryQuestionId(surveyId, primaryQuestionId);
+
+    if (result.error) {
+      setPrimaryQuestionError(result.error);
+      setIsPrimaryQuestionSaving(false);
+      return;
+    }
+
+    setPrimaryQuestionId(result.primaryQuestionId);
+    setSavedPrimaryQuestionId(result.primaryQuestionId);
+    setPrimaryQuestionMessage(
+      result.primaryQuestionId
+        ? "Pergunta principal salva com sucesso."
+        : "Configuração da pergunta principal removida.",
+    );
+    setIsPrimaryQuestionSaving(false);
+  }
 
   useEffect(() => {
     if (!isFormOpen) {
@@ -224,6 +267,11 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
       .map((item, index) => ({ ...item, position: index + 1 }));
 
     setQuestions(remainingQuestions);
+    if (question.id === savedPrimaryQuestionId) {
+      setPrimaryQuestionId(null);
+      setSavedPrimaryQuestionId(null);
+      setPrimaryQuestionMessage("A configuração principal foi removida porque a pergunta foi excluída.");
+    }
     await reorderQuestions(remainingQuestions);
     setMessage("Pergunta excluída.");
     setIsLoading(false);
@@ -304,6 +352,22 @@ export function QuestionBuilder({ surveyId, surveyTitle, onClose }: QuestionBuil
             {error}
           </p>
         ) : null}
+
+        <PrimaryQuestionSetting
+          questions={questions}
+          selectedQuestionId={primaryQuestionId}
+          savedQuestionId={savedPrimaryQuestionId}
+          isLoading={isPrimaryQuestionLoading}
+          isSaving={isPrimaryQuestionSaving}
+          error={primaryQuestionError}
+          message={primaryQuestionMessage}
+          onChange={(questionId) => {
+            setPrimaryQuestionId(questionId);
+            setPrimaryQuestionError(null);
+            setPrimaryQuestionMessage(null);
+          }}
+          onSave={savePrimaryQuestion}
+        />
 
         {isFormOpen ? (
           <form

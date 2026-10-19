@@ -33,7 +33,7 @@ function getFriendlySurveyLoadError(message: string, code?: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (code === "42P01" || normalizedMessage.includes("does not exist")) {
-    return "A tabela de pesquisas ainda nao foi criada no Supabase. Aplique o SQL de supabase/surveys.sql e recarregue esta pagina.";
+    return "A tabela de pesquisas ainda nao foi criada no Supabase. Aplique o SQL de supabase/002_surveys.sql e recarregue esta pagina.";
   }
 
   if (normalizedMessage.includes("permission") || normalizedMessage.includes("row-level security")) {

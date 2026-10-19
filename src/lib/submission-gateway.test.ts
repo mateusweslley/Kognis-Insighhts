@@ -401,6 +401,70 @@ describe("Sprint 2 — Utilitários puros (campaign-issuance-utils)", () => {
   });
 });
 
+describe("Validação de respostas dinâmicas no gateway", () => {
+  function makeRpcClient() {
+    const rpc = vi.fn(async () => ({
+      data: { submitted: true, response_id: "response-1" },
+      error: null,
+    }));
+    const client: SupabaseGatewayClient = {
+      rpc,
+      from: () => ({ insert: async () => ({ error: null }) }),
+    };
+
+    return { client, rpc };
+  }
+
+  function dynamicAnswers(values: Record<string, unknown>): ResponseAnswers {
+    return {
+      mode: "dynamic",
+      answers: values as Record<string, string | number>,
+    };
+  }
+
+  it.each([
+    ["objeto answers vazio", {}],
+    ["strings vazias ou só com espaços", { q1: "", q2: "  \t\n" }],
+    ["valores null e undefined", { q1: null, q2: undefined }],
+  ])("rejeita %s sem chamar a RPC", async (_description, values) => {
+    const { client, rpc } = makeRpcClient();
+
+    const result = await submitPublicSurveyResponse(
+      {
+        surveyId: "survey-1",
+        answers: dynamicAnswers(values),
+        submissionKey: "submission-1",
+      },
+      client,
+    );
+
+    expect(result.submitted).toBe(false);
+    expect(result.error).toBe("Preencha as respostas da pesquisa antes de enviar.");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["zero", { q1: 0 }],
+    ["false", { q1: false }],
+    ["texto, seleção e avaliação", { q1: "Resposta", q2: "Opção A", q3: 5 }],
+  ])("aceita %s como valor significativo", async (_description, values) => {
+    const { client, rpc } = makeRpcClient();
+
+    const result = await submitPublicSurveyResponse(
+      {
+        surveyId: "survey-1",
+        answers: dynamicAnswers(values),
+        submissionKey: "submission-1",
+      },
+      client,
+    );
+
+    expect(result.submitted).toBe(true);
+    expect(result.error).toBeNull();
+    expect(rpc).toHaveBeenCalledOnce();
+  });
+});
+
 describe("Sprint 2 — Matriz Obrigatória de 16 Cenários (Submission Gateway + Emissão)", () => {
   const dynamicValidAnswers: ResponseAnswers = {
     mode: "dynamic",

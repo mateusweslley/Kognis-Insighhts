@@ -113,7 +113,8 @@ function isValidAnswersPayload(answers: ResponseAnswers | unknown): answers is R
     return (
       typeof dynamic.answers === "object" &&
       dynamic.answers !== null &&
-      !Array.isArray(dynamic.answers)
+      !Array.isArray(dynamic.answers) &&
+      Object.values(dynamic.answers).some(isMeaningfulDynamicAnswer)
     );
   }
 
@@ -126,6 +127,18 @@ function isValidAnswersPayload(answers: ResponseAnswers | unknown): answers is R
     legacy.rating >= 1 &&
     legacy.rating <= 5
   );
+}
+
+function isMeaningfulDynamicAnswer(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  return typeof value === "number" || typeof value === "boolean";
 }
 
 export function normalizeGatewayRpcData(raw: unknown): SubmissionGatewayResult {

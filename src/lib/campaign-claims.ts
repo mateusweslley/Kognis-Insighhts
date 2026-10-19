@@ -61,7 +61,7 @@ export async function getSanitizedCampaignClaims(
 
 function getFriendlyCampaignClaimsError(message: string, code?: string) {
   if (code === "42P01" || message.toLowerCase().includes("does not exist")) {
-    return "A tabela de claims ainda nao foi criada no Supabase. Aplique o SQL de supabase/2026_campaigns_foundation.sql.";
+    return "A tabela de claims ainda nao foi criada no Supabase. Aplique o SQL de supabase/009_campaigns_foundation.sql.";
   }
   if (message.toLowerCase().includes("permission") || message.toLowerCase().includes("row-level security")) {
     return "Voce nao tem permissao para acessar estas claims.";

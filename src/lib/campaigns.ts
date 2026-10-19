@@ -304,7 +304,7 @@ function getFriendlyCampaignError(message: string, code?: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (code === "42P01" || normalizedMessage.includes("does not exist")) {
-    return "A tabela de campanhas ainda nao foi criada no Supabase. Aplique o SQL de supabase/campaigns.sql.";
+    return "A tabela de campanhas ainda nao foi criada no Supabase. Aplique o SQL de supabase/005_campaigns.sql.";
   }
 
   if (normalizedMessage.includes("survey already has an active campaign")) {
