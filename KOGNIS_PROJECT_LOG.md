@@ -17,7 +17,7 @@ Validacoes executadas:
 - `npm run lint`
 
 Pontos de atencao:
-- O SQL de `supabase/companies.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
+- O SQL de `supabase/001_companies.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
 - `npm run build` ainda falha no ambiente local por acesso bloqueado ao Google Fonts e permissao em `.next/trace`, antes de concluir a compilacao.
 - Nenhuma service role key foi adicionada ao projeto.
 
@@ -57,7 +57,7 @@ Validacoes executadas:
 - `npm run lint`
 
 Pontos de atencao:
-- O SQL de `supabase/surveys.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
+- O SQL de `supabase/002_surveys.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
 - `npm run build` foi executado, mas o ambiente bloqueou o acesso ao Google Fonts usado por `next/font`.
 
 ## Sprint 4.1 - Ajuste de UX do Dashboard
@@ -160,7 +160,7 @@ Validacoes executadas:
 - `npm run lint`
 
 Pontos de atencao:
-- O SQL de `supabase/responses.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
+- O SQL de `supabase/004_responses.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
 - `npm run build` foi executado, mas o ambiente local bloqueou o acesso ao Google Fonts usado por `next/font`.
 
 Fora de escopo:
@@ -207,7 +207,7 @@ Validacoes executadas:
 - `npm run lint`
 
 Pontos de atencao:
-- O SQL de `supabase/campaigns.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
+- O SQL de `supabase/005_campaigns.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
 - `npm run build` foi executado, mas o ambiente local bloqueou o acesso ao Google Fonts usado por `next/font`.
 
 Fora de escopo:
@@ -297,7 +297,7 @@ Objetivo:
 - Manter a pagina publica atual, o QR Code, as respostas e a exportacao CSV sem alteracao funcional.
 
 Entregas:
-- Criada tabela `public.survey_questions` em `supabase/survey_questions.sql`.
+- Criada tabela `public.survey_questions` em `supabase/003_survey_questions.sql`.
 - Criados tipos de perguntas em `src/types/survey-question.ts`.
 - Criada camada de dados em `src/lib/survey-questions.ts`.
 - Criados templates nativos em `src/lib/survey-question-templates.ts`.
@@ -374,7 +374,7 @@ Bugs encontrados:
 - O TypeScript tentou criar `tsconfig.tsbuildinfo` durante `npx tsc --noEmit`; a validacao foi refeita com `--incremental false`.
 
 Pontos de atencao:
-- O SQL de `supabase/survey_questions.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
+- O SQL de `supabase/003_survey_questions.sql` precisa ser aplicado no Supabase antes do teste funcional completo.
 - A Sprint 7.1 nao renderiza perguntas personalizadas na pagina publica.
 - A criacao por template depende da nova tabela existir no Supabase.
 - O workspace possuia alteracoes nao commitadas anteriores a esta sprint; elas nao foram revertidas.
@@ -444,7 +444,7 @@ Entregas:
 
 Banco de dados:
 - Nenhuma nova tabela foi criada nesta sprint.
-- `supabase/survey_questions.sql` foi atualizado com policy publica de leitura.
+- `supabase/003_survey_questions.sql` foi atualizado com policy publica de leitura.
 - Nova policy:
   - `"Public can view active survey questions"`.
   - Permite `select` para `anon, authenticated`.
@@ -479,7 +479,7 @@ Validacoes executadas:
 - `npm run build` foi tentado, mas falhou por bloqueio de acesso ao Google Fonts usado por `next/font`.
 
 Pontos de atencao:
-- O SQL atualizado de `supabase/survey_questions.sql` precisa ser aplicado no Supabase.
+- O SQL atualizado de `supabase/003_survey_questions.sql` precisa ser aplicado no Supabase.
 - O workspace possui alteracoes nao commitadas de sprints anteriores; elas nao foram revertidas.
 - `npm run build` pode falhar neste ambiente por bloqueio ao Google Fonts usado por `next/font`.
 
@@ -1111,7 +1111,7 @@ Sugestão de commit:
 Status: concluída (`3c69822`).
 
 Entregas:
-- Migration `supabase/2026_campaigns_foundation.sql` evoluindo `public.campaigns` e criando `public.campaign_surveys`, `public.campaign_rewards` e `public.campaign_claims`.
+- Migration `supabase/009_campaigns_foundation.sql` evoluindo `public.campaigns` e criando `public.campaign_surveys`, `public.campaign_rewards` e `public.campaign_claims`.
 - RLS por `company_id` / `owner_id = auth.uid()` e triggers de integridade no banco.
 - Contratos e helpers puros em `src/types/campaign.ts`, `src/lib/campaign-utils.ts`, `src/lib/campaigns.ts`, `src/lib/campaign-surveys.ts`, `src/lib/campaign-rewards.ts` e `src/lib/campaign-claims.ts`.
 
@@ -1122,7 +1122,7 @@ Status: concluída.
 Entregas:
 - Criados contratos de submissão em `src/types/submission.ts`.
 - Criados utilitários puros de elegibilidade e emissão em `src/lib/campaign-issuance-utils.ts`.
-- Criada migration `supabase/2026_submission_gateway.sql` com RPC `public.submit_public_survey_response` (`SECURITY DEFINER`), proteção de concorrência (`FOR UPDATE`), idempotência por `submission_key`, e subtransação `EXCEPTION` para preservar a resposta pública mesmo em caso de falha na emissão de recompensa.
+- Criada migration `supabase/011_submission_gateway.sql` com RPC `public.submit_public_survey_response` (`SECURITY DEFINER`), proteção de concorrência (`FOR UPDATE`), idempotência por `submission_key`, e subtransação `EXCEPTION` para preservar a resposta pública mesmo em caso de falha na emissão de recompensa.
 - Criado gateway cliente `src/lib/submission-gateway.ts` com sanitização de payload público e fallback compatível durante transição.
 - Criado componente `src/components/responses/submission-completion-card.tsx` e integrado a `DynamicPublicResponseForm` e `PublicResponseForm`.
 - Criada suíte de testes `src/lib/submission-gateway.test.ts` (16 testes).
