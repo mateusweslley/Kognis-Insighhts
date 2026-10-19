@@ -16,7 +16,14 @@ import type { SurveyQuestion } from "@/types/survey-question";
 
 export type MetricResult =
   | { kind: "kpi"; value: number | null; label: string }
-  | { kind: "distribution"; labels: string[]; values: number[] }
+  | {
+      kind: "distribution";
+      labels: string[];
+      values: number[];
+      percentages?: number[];
+      total?: number;
+      emptyMessage?: string;
+    }
   | { kind: "trend"; points: Array<{ period: string; value: number }> }
   | { kind: "topics"; items: Array<{ topic: string | null; count: number; avgRating: number | null }> };
 
@@ -94,6 +101,9 @@ function resolveDistribution(
       kind: "distribution",
       labels: dist.buckets.map((b) => b.value),
       values: dist.buckets.map((b) => b.count),
+      percentages: dist.buckets.map((b) => b.pct),
+      total: dist.total,
+      emptyMessage: "Ainda não há respostas para esta pergunta",
     };
   }
 

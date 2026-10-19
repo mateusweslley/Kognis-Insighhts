@@ -19,7 +19,6 @@ import type { Survey } from "@/types/survey";
 type DashboardWorkspaceProps = {
   companyId: string;
   surveys: Survey[];
-  totalResponses: number;
   totalCampaigns: number;
   error?: string | null;
 };
@@ -31,7 +30,6 @@ const OVERVIEW_ID = "__overview__";
 export function DashboardWorkspace({
   companyId,
   surveys,
-  totalResponses,
   totalCampaigns,
   error: overviewError,
 }: DashboardWorkspaceProps) {
@@ -147,7 +145,6 @@ export function DashboardWorkspace({
           ) : (
             <DashboardOverview
               surveys={surveys}
-              totalResponses={totalResponses}
               totalCampaigns={totalCampaigns}
               error={overviewError}
             />

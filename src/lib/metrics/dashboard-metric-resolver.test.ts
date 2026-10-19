@@ -82,6 +82,50 @@ describe("extractResponseData", () => {
     expect(data.legacyRatings).toEqual([4]);
     expect(data.totalResponses).toBe(1);
   });
+
+  it("ignora valores vazios e valores incompatíveis com o tipo/escala da pergunta", () => {
+    const questions = [
+      makeQuestion({ id: "rating", type: "rating" }),
+      makeQuestion({ id: "rating10", type: "rating_10" }),
+      makeQuestion({ id: "text", type: "short_text" }),
+    ];
+    const responses = [
+      {
+        id: "r1",
+        survey_id: "s1",
+        created_at: "2026-01-01T00:00:00.000Z",
+        answers: {
+          mode: "dynamic",
+          answers: {
+            rating: "4",
+            rating10: "0",
+            text: "  ",
+          },
+        },
+      },
+      {
+        id: "r2",
+        survey_id: "s1",
+        created_at: "2026-01-02T00:00:00.000Z",
+        answers: {
+          mode: "dynamic",
+          answers: {
+            rating: "0x4",
+            rating10: "4e0",
+            text: "",
+          },
+        },
+      },
+    ] as unknown as SurveyResponse[];
+
+    const data = extractResponseData(responses, questions);
+
+    expect(data.valuesByQuestion.get("rating")).toEqual(["4"]);
+    expect(data.valuesByQuestion.get("rating10")).toEqual(["0"]);
+    expect(data.valuesByQuestion.has("text")).toBe(false);
+    expect(data.totalResponses).toBe(1);
+    expect(data.timestamps).toEqual(["2026-01-01T00:00:00.000Z"]);
+  });
 });
 
 describe("resolveMetric", () => {
@@ -109,11 +153,14 @@ describe("resolveMetric", () => {
   });
 
   it("distribution de single_choice", () => {
-    const questions = [makeQuestion({ id: "q1", type: "single_choice", options: ["Sim", "Não", "Talvez"] })];
+    const questions = [
+      makeQuestion({ id: "q1", type: "single_choice", options: ["Sim", "Não", "Talvez"] }),
+    ];
     const responses: SurveyResponse[] = [
       { id: "r1", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: "Sim" } } },
       { id: "r2", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: "Sim" } } },
       { id: "r3", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: "Não" } } },
+      { id: "r4", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: "Outro" } } },
     ];
     const data = extractResponseData(responses, questions);
     const widget = makeWidget({ metric: "distribution", question_id: "q1", visualization: "pie" });
@@ -121,8 +168,30 @@ describe("resolveMetric", () => {
     const result = resolveMetric(widget, data, questions);
     expect(result.kind).toBe("distribution");
     if (result.kind === "distribution") {
+      expect(result.labels).toEqual(["Sim", "Não", "Talvez"]);
+      expect(result.values).toEqual([2, 1, 0]);
+      expect(result.percentages).toEqual([2 / 3, 1 / 3, 0]);
+      expect(result.total).toBe(3);
+    }
+  });
+
+  it("mantém todas as alternativas e zero percentual quando não há respostas válidas", () => {
+    const questions = [makeQuestion({ id: "q1", type: "single_choice", options: ["Sim", "Não"] })];
+    const responses: SurveyResponse[] = [
+      { id: "r1", survey_id: "s1", created_at: "2026-01-01T00:00:00.000Z", answers: { mode: "dynamic", answers: { q1: "Talvez" } } },
+    ];
+    const data = extractResponseData(responses, questions);
+    const widget = makeWidget({ metric: "distribution", question_id: "q1", visualization: "pie" });
+
+    const result = resolveMetric(widget, data, questions);
+
+    expect(result.kind).toBe("distribution");
+    if (result.kind === "distribution") {
       expect(result.labels).toEqual(["Sim", "Não"]);
-      expect(result.values).toEqual([2, 1]);
+      expect(result.values).toEqual([0, 0]);
+      expect(result.percentages).toEqual([0, 0]);
+      expect(result.total).toBe(0);
+      expect(result.emptyMessage).toBe("Ainda não há respostas para esta pergunta");
     }
   });
 
@@ -195,6 +264,7 @@ describe("resolveMetric", () => {
 
     const result = resolveMetric(widget, data, []);
     expect(result.kind).toBe("trend");
-    if (result.kind === "trend") expect(result.points).toHaveLength(1);
+    if (result.kind === "trend") expect(result.points).toHaveLength(0);
+    expect(data.totalResponses).toBe(0);
   });
 });

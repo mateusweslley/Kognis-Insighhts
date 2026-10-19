@@ -3,7 +3,6 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { WidgetRenderer } from "@/components/dashboard/widget-renderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,8 +24,11 @@ import {
   getAvailableMetricsForSurvey,
   getAvailableVisualizationsForMetric,
 } from "@/lib/dashboard-metric-compat";
-import { resolveMetric, type MetricResult } from "@/lib/dashboard-metric-resolver";
-import { loadMetricData } from "@/lib/dashboard-metric-loader";
+import {
+  loadWidgetMetricState,
+  WidgetMetricStateView,
+  type WidgetMetricState,
+} from "@/components/dashboard/widget-metric-state";
 import type {
   Dashboard,
   DashboardMetric,
@@ -220,34 +222,28 @@ function WidgetCard({
   onChanged: () => Promise<void>;
   onEdit: () => void;
 }) {
-  const [metricResult, setMetricResult] = useState<MetricResult | null>(null);
+  const [metricState, setMetricState] = useState<WidgetMetricState>({ status: "loading" });
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
+    setMetricState({ status: "loading" });
 
-    (async () => {
-      if (!widget.survey_id) {
-        const data = await loadEmptyMetric(widget);
-        if (active) setMetricResult(data);
-        return;
-      }
-
-      const loaded = await loadMetricData(widget.survey_id);
-      if (!active) return;
-
-      if (loaded.error) {
-        return;
-      }
-
-      setMetricResult(resolveMetric(widget, loaded.data, loaded.questions));
-    })();
+    void loadWidgetMetricState(widget).then((state) => {
+      if (active) setMetricState(state);
+    });
 
     return () => {
       active = false;
     };
-  }, [widget]);
+  }, [widget, retryAttempt]);
+
+  function retryMetricLoad() {
+    setMetricState({ status: "loading" });
+    setRetryAttempt((attempt) => attempt + 1);
+  }
 
   async function move(direction: "up" | "down") {
     const otherIndex = direction === "up" ? index - 1 : index + 1;
@@ -305,11 +301,11 @@ function WidgetCard({
         </div>
       </CardHeader>
       <CardContent>
-        {metricResult ? (
-          <WidgetRenderer metric={metricResult} visualization={widget.visualization} />
-        ) : (
-          <p className="text-sm text-muted-foreground">Carregando…</p>
-        )}
+        <WidgetMetricStateView
+          state={metricState}
+          visualization={widget.visualization}
+          onRetry={retryMetricLoad}
+        />
       </CardContent>
 
       {isConfirmingDelete ? (
@@ -332,17 +328,6 @@ function WidgetCard({
       ) : null}
     </Card>
   );
-}
-
-async function loadEmptyMetric(widget: DashboardWidget): Promise<MetricResult> {
-  const empty = {
-    timestamps: [],
-    totalResponses: 0,
-    valuesByQuestion: new Map(),
-    topicByQuestion: new Map(),
-    legacyRatings: [],
-  };
-  return resolveMetric(widget, empty, []);
 }
 
 function WidgetForm({

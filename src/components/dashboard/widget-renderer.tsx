@@ -34,54 +34,58 @@ export function WidgetRenderer({ metric, visualization }: WidgetRendererProps) {
     const data = metric.labels.map((label, index) => ({
       name: label,
       value: metric.values[index] ?? 0,
+      pct: metric.percentages?.[index] ?? 0,
     }));
+
+    const noValidResponses = metric.total === 0 && Boolean(metric.emptyMessage);
+    const choices = (
+      <DistributionTable data={data} showPercentages={metric.percentages !== undefined} />
+    );
+
+    if (noValidResponses) {
+      return (
+        <div>
+          <p className="mb-2 text-sm text-muted-foreground">{metric.emptyMessage}</p>
+          {choices}
+        </div>
+      );
+    }
 
     if (visualization === "pie") {
       return (
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}>
-              {data.map((entry, index) => (
-                <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
+        <div>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}>
+                {data.map((entry, index) => (
+                  <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value, _name, item) => [`${value} (${formatPercent(item.payload.pct)})`, "Quantidade"]} />
+            </PieChart>
+          </ResponsiveContainer>
+          {choices}
+        </div>
       );
     }
 
     if (visualization === "table") {
-      return (
-        <table className="w-full text-sm text-text-primary">
-          <thead>
-            <tr className="border-b border-border text-left text-text-secondary">
-              <th className="py-2 pr-2 font-medium">Opção</th>
-              <th className="py-2 font-medium">Quantidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row) => (
-              <tr key={row.name} className="border-b border-border">
-                <td className="py-2 pr-2">{row.name}</td>
-                <td className="py-2">{row.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      );
+      return choices;
     }
 
     return (
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="name" />
-          <YAxis allowDecimals={false} />
-          <Tooltip />
-          <Bar dataKey="value" fill="#0d6e6e" />
-        </BarChart>
-      </ResponsiveContainer>
+      <div>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="name" />
+            <YAxis allowDecimals={false} />
+            <Tooltip formatter={(value, _name, item) => [`${value} (${formatPercent(item.payload.pct)})`, "Quantidade"]} />
+            <Bar dataKey="value" fill="#0d6e6e" />
+          </BarChart>
+        </ResponsiveContainer>
+        {choices}
+      </div>
     );
   }
 
@@ -156,6 +160,44 @@ export function WidgetRenderer({ metric, visualization }: WidgetRendererProps) {
   }
 
   return null;
+}
+
+type DistributionRow = { name: string; value: number; pct: number };
+
+function DistributionTable({
+  data,
+  showPercentages,
+}: {
+  data: DistributionRow[];
+  showPercentages: boolean;
+}) {
+  return (
+    <table className="w-full text-sm text-text-primary">
+      <thead>
+        <tr className="border-b border-border text-left text-text-secondary">
+          <th className="py-2 pr-2 font-medium">Opção</th>
+          <th className="py-2 pr-2 font-medium">Quantidade</th>
+          {showPercentages && <th className="py-2 font-medium">Percentual</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((row) => (
+          <tr key={row.name} className="border-b border-border">
+            <td className="py-2 pr-2">{row.name}</td>
+            <td className="py-2 pr-2">{row.value}</td>
+            {showPercentages && <td className="py-2">{formatPercent(row.pct)}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function formatPercent(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
 function KpiRenderer({ value, label }: { value: number | null; label: string }) {

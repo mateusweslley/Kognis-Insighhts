@@ -137,7 +137,7 @@ function getFriendlyDashboardError(message: string, code?: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (code === "42P01" || normalizedMessage.includes("does not exist")) {
-    return "A tabela de dashboards ainda não foi criada no Supabase. Aplique o SQL de supabase/2026_dashboard_builder.sql.";
+    return "A tabela de dashboards ainda não foi criada no Supabase. Aplique o SQL de supabase/010_dashboard_builder.sql.";
   }
 
   if (normalizedMessage.includes("permission") || normalizedMessage.includes("row-level security")) {

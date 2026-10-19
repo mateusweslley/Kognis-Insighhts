@@ -88,11 +88,19 @@ export function computeNumericStats(values: Array<string | number>): NumericStat
 }
 
 function toNumber(value: string | number): number | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "string" && value.trim() === "") return null;
+  return parseStrictNumericValue(value);
+}
 
-  const number = typeof value === "number" ? value : Number(value);
+// Aceita valores numéricos reais finitos ou strings decimais inteiras estritas.
+// Evita que Number() interprete formatos inesperados, como hexadecimal ou expoente.
+export function parseStrictNumericValue(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
 
+  if (typeof value !== "string" || !/^-?\d+$/.test(value)) return null;
+
+  const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
@@ -121,8 +129,7 @@ export function computeChoiceDistribution(
         count,
         pct: total === 0 ? 0 : count / total,
       };
-    })
-    .filter((bucket) => bucket.count > 0);
+    });
 
   return { total, buckets };
 }
@@ -310,9 +317,9 @@ export function classifyNps(score: number | null): NpsClassification | null {
 }
 
 function toRatingNumber(value: string | number): number | null {
-  const number = typeof value === "number" ? value : Number(value);
+  const number = parseStrictNumericValue(value);
 
-  if (!Number.isFinite(number)) return null;
+  if (number === null) return null;
   if (!Number.isInteger(number)) return null;
   if (number < 1 || number > 5) return null;
 

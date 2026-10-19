@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { DashboardKpiPanel } from "@/components/dashboard/dashboard-kpi-panel";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,19 +10,16 @@ import { surveyStatusLabels } from "@/types/survey";
 
 type DashboardOverviewProps = {
   surveys: Survey[];
-  totalResponses?: number;
   totalCampaigns?: number;
   error?: string | null;
 };
 
 export function DashboardOverview({
   surveys,
-  totalResponses = 0,
   totalCampaigns = 0,
   error,
 }: DashboardOverviewProps) {
   const totalSurveys = surveys.length;
-  const activeSurveys = countSurveysByStatus(surveys, "active");
   const draftSurveys = countSurveysByStatus(surveys, "draft");
   const archivedSurveys = countSurveysByStatus(surveys, "archived");
   const latestSurveys = surveys.slice(0, 3);
@@ -34,6 +32,7 @@ export function DashboardOverview({
           description="Acompanhe os principais sinais das pesquisas e campanhas da sua marca."
         />
         {error ? <ErrorMessage>{error}</ErrorMessage> : null}
+        <DashboardKpiPanel />
         <EmptyState
           title="Dashboard aguardando respostas."
           description="Quando consumidores responderem suas pesquisas, os indicadores principais aparecerão aqui."
@@ -58,13 +57,13 @@ export function DashboardOverview({
 
       {error ? <ErrorMessage>{error}</ErrorMessage> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+      <DashboardKpiPanel />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard title="Total de pesquisas" value={totalSurveys} />
         <SummaryCard title="Total de campanhas" value={totalCampaigns} />
-        <SummaryCard title="Pesquisas ativas" value={activeSurveys} />
         <SummaryCard title="Em rascunho" value={draftSurveys} />
         <SummaryCard title="Encerradas" value={archivedSurveys} />
-        <SummaryCard title="Respostas recebidas" value={totalResponses} />
       </div>
 
       <Card>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeChoiceDistribution,
+  computeNumericStats,
   computeRatingStats,
   computeResponseVolumeOverTime,
   computeTopicMetrics,
@@ -34,11 +35,20 @@ describe("computeRatingStats", () => {
   });
 
   it("ignora ratings inválidos", () => {
-    const result = computeRatingStats([1, 0, 6, 2.5, "abc", null, "", 3] as Array<string | number>);
-    expect(result.count).toBe(2);
-    expect(result.average).toBe(2);
+    const result = computeRatingStats([
+      1, 0, 6, 2.5, "abc", null, "", "   ", "0x4", "4e0", true,
+      "4", 3,
+    ] as Array<string | number>);
+    expect(result.count).toBe(3);
+    expect(result.average).toBe(8 / 3);
     expect(result.min).toBe(1);
-    expect(result.max).toBe(3);
+    expect(result.max).toBe(4);
+  });
+
+  it("aceita apenas strings inteiras estritas dentro da escala 1–5", () => {
+    const result = computeRatingStats(["1", "5", " 4 ", "0", "6", "0x4", "4e0"]);
+    expect(result.count).toBe(2);
+    expect(result.average).toBe(3);
   });
 
   it("não inventa valor quando tudo é inválido", () => {
@@ -55,11 +65,30 @@ describe("computeRatingStats", () => {
   });
 });
 
+describe("computeNumericStats", () => {
+  it("rejeita strings que não são inteiros decimais estritos e preserva números válidos", () => {
+    const result = computeNumericStats([4, 0, "4", "0", "0x4", "4e0", "", "   "]);
+    expect(result.count).toBe(4);
+    expect(result.average).toBe(2);
+  });
+
+  it("ignora booleanos e nulos em entradas numéricas", () => {
+    const result = computeNumericStats(
+      [true, false, null, undefined, 3] as unknown as Array<string | number>,
+    );
+    expect(result.count).toBe(1);
+    expect(result.average).toBe(3);
+  });
+});
+
 describe("computeChoiceDistribution", () => {
   it("retorna distribuição vazia para zero respostas", () => {
     const result = computeChoiceDistribution([], ["Sim", "Não"]);
     expect(result.total).toBe(0);
-    expect(result.buckets).toEqual([]);
+    expect(result.buckets).toEqual([
+      { value: "Sim", count: 0, pct: 0 },
+      { value: "Não", count: 0, pct: 0 },
+    ]);
   });
 
   it("respeita as opções existentes e ordena por opção", () => {
@@ -75,12 +104,18 @@ describe("computeChoiceDistribution", () => {
   it("ignora valores fora das opções e vazios", () => {
     const result = computeChoiceDistribution(["Sim", "OutroValor", null, ""] as Array<string | number>, ["Sim", "Não"]);
     expect(result.total).toBe(1);
-    expect(result.buckets).toEqual([{ value: "Sim", count: 1, pct: 1 }]);
+    expect(result.buckets).toEqual([
+      { value: "Sim", count: 1, pct: 1 },
+      { value: "Não", count: 0, pct: 0 },
+    ]);
   });
 
-  it("omite buckets com zero contagem", () => {
+  it("preserva alternativas com zero contagem", () => {
     const result = computeChoiceDistribution(["Sim"], ["Sim", "Não"]);
-    expect(result.buckets.map((b) => b.value)).toEqual(["Sim"]);
+    expect(result.buckets).toEqual([
+      { value: "Sim", count: 1, pct: 1 },
+      { value: "Não", count: 0, pct: 0 },
+    ]);
   });
 });
 
