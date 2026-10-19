@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, MessageSquareText, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -39,6 +39,14 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
       <PageHeader
         title="Respostas"
         description="Acompanhe as respostas recebidas pelas suas pesquisas."
+        actions={
+          <Button variant="secondary" asChild>
+            <Link href="/respostas?view=feedbacks">
+              <MessageSquareText className="h-4 w-4" />
+              Ver feedbacks textuais
+            </Link>
+          </Button>
+        }
       />
 
       {error ? (

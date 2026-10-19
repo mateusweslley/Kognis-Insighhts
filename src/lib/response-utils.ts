@@ -1,4 +1,5 @@
 import type { DynamicResponseAnswers, ResponseAnswers, SurveyResponseWithSurvey } from "@/types/response";
+import { serializeCsvCell } from "@/lib/csv-cell";
 
 export function exportResponsesToCsv(responses: SurveyResponseWithSurvey[]) {
   const dynamicColumnIds = collectDynamicColumnIds(responses);
@@ -26,7 +27,7 @@ export function exportResponsesToCsv(responses: SurveyResponseWithSurvey[]) {
       response.survey_title,
       legacyAnswers?.name ?? "",
       legacyAnswers?.email ?? "",
-      legacyAnswers?.rating ? String(legacyAnswers.rating) : "",
+      legacyAnswers?.rating ?? "",
       legacyAnswers?.comment ?? "",
       ...dynamicColumnIds.map((questionId) => dynamicAnswers[questionId] ?? ""),
       response.created_at,
@@ -34,7 +35,7 @@ export function exportResponsesToCsv(responses: SurveyResponseWithSurvey[]) {
   });
 
   return [headers, ...rows]
-    .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(","))
+    .map((row) => row.map(serializeCsvCell).join(","))
     .join("\n");
 }
 

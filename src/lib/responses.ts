@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { exportResponsesToCsv } from "@/lib/response-utils";
+import { normalizeResponses } from "@/lib/response-normalizer";
+import {
+  readFeedbackPage,
+  type FeedbackCursor,
+  type FeedbackQuestion,
+  type FeedbackResponse,
+} from "@/lib/feedback-feed";
 import type { PublicSurvey, ResponseAnswers, SurveyResponse, SurveyResponseWithSurvey } from "@/types/response";
 import type { SurveyQuestion } from "@/types/survey-question";
 
@@ -33,6 +40,132 @@ type PublicSurveyQuestionsResult = {
   questions: SurveyQuestion[];
   error: string | null;
 };
+
+const FEEDBACK_PAGE_SIZE = 20;
+const FEEDBACK_BATCH_SIZE = 50;
+const FEEDBACK_MAX_BATCHES = 4;
+
+export async function getCompanyFeedbackPage(companyId: string, cursor: FeedbackCursor | null) {
+  const supabase = createClient();
+  const { data: surveys, error: surveysError } = await supabase
+    .from("surveys")
+    .select("id,title")
+    .eq("company_id", companyId);
+
+  if (surveysError) return { page: null, error: getFriendlyResponsesError(surveysError.message, surveysError.code) };
+  const surveyRows = (surveys ?? []) as Array<{ id: string; title: string }>;
+  if (surveyRows.length === 0) {
+    return {
+      page: await readFeedbackPage({
+        pageSize: FEEDBACK_PAGE_SIZE,
+        batchSize: FEEDBACK_BATCH_SIZE,
+        maxBatches: FEEDBACK_MAX_BATCHES,
+        cursor,
+        questionsBySurvey: new Map(),
+        surveyTitles: new Map(),
+        fetchBatch: async () => [],
+        fetchById: async () => null,
+      }),
+      error: null,
+    };
+  }
+
+  const surveyIds = surveyRows.map(({ id }) => id);
+  const surveyTitles = new Map(surveyRows.map(({ id, title }) => [id, title]));
+  const { data: questionRows, error: questionsError } = await supabase
+    .from("survey_questions")
+    .select("id,survey_id,type,title")
+    .in("survey_id", surveyIds)
+    .in("type", ["short_text", "long_text"]);
+
+  if (questionsError) return { page: null, error: getFriendlyResponsesError(questionsError.message, questionsError.code) };
+  const questionsBySurvey = new Map<string, FeedbackQuestion[]>();
+  (questionRows ?? []).forEach((row) => {
+    const question = row as { id: string; survey_id: string; type: "short_text" | "long_text"; title: string };
+    const current = questionsBySurvey.get(question.survey_id) ?? [];
+    current.push({ id: question.id, type: question.type, title: question.title });
+    questionsBySurvey.set(question.survey_id, current);
+  });
+
+  const fetchBatch = async (after: FeedbackCursor | null, limit: number) => {
+    let query = supabase
+      .from("responses")
+      .select("id,survey_id,answers,created_at")
+      .in("survey_id", surveyIds)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(limit);
+
+    if (after) {
+      query = query.or(
+        `created_at.lt.${after.createdAt},and(created_at.eq.${after.createdAt},id.lt.${after.responseId})`,
+      );
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return (data ?? []) as FeedbackResponse[];
+  };
+
+  const fetchById = async (responseId: string) => {
+    const { data, error } = await supabase
+      .from("responses")
+      .select("id,survey_id,answers,created_at")
+      .in("survey_id", surveyIds)
+      .eq("id", responseId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as FeedbackResponse | null) ?? null;
+  };
+
+  try {
+    const page = await readFeedbackPage({
+      pageSize: FEEDBACK_PAGE_SIZE,
+      batchSize: FEEDBACK_BATCH_SIZE,
+      maxBatches: FEEDBACK_MAX_BATCHES,
+      cursor,
+      questionsBySurvey,
+      surveyTitles,
+      fetchBatch,
+      fetchById,
+    });
+    return { page, error: null };
+  } catch (error) {
+    console.error("Erro ao carregar feed de feedbacks:", error);
+    return { page: null, error: "Nao foi possivel carregar os feedbacks agora. Tente novamente." };
+  }
+}
+
+export async function getCompanyFeedbackResponse(companyId: string, responseId: string) {
+  const supabase = createClient();
+  const { data: surveys, error: surveysError } = await supabase
+    .from("surveys")
+    .select("id,title")
+    .eq("company_id", companyId);
+  if (surveysError) return { response: null, error: getFriendlyResponsesError(surveysError.message, surveysError.code) };
+  const surveyRows = (surveys ?? []) as Array<{ id: string; title: string }>;
+  if (surveyRows.length === 0) return { response: null, error: null };
+
+  const { data, error } = await supabase
+    .from("responses")
+    .select("id,survey_id,answers,created_at")
+    .in("survey_id", surveyRows.map(({ id }) => id))
+    .eq("id", responseId)
+    .maybeSingle();
+  if (error) return { response: null, error: getFriendlyResponsesError(error.message, error.code) };
+  if (!data) return { response: null, error: null };
+
+  const row = data as SurveyResponse;
+  const { questions, error: questionsError } = await getSurveyQuestionsForResponses(row.survey_id);
+  if (questionsError) return { response: null, error: questionsError };
+  const normalized = normalizeResponses([row], questions)[0] ?? null;
+  return {
+    response: normalized
+      ? { ...normalized, surveyTitle: surveyRows.find((survey) => survey.id === row.survey_id)?.title ?? "Pesquisa" }
+      : null,
+    error: null,
+  };
+}
 
 export async function getPublicSurveyById(surveyId: string): Promise<PublicSurveyResult> {
   const supabase = createClient();
@@ -330,7 +463,7 @@ function getFriendlyResponsesError(message: string, code?: string) {
   const normalizedMessage = message.toLowerCase();
 
   if (code === "42P01" || normalizedMessage.includes("does not exist")) {
-    return "A tabela de respostas ainda nao foi criada no Supabase. Aplique o SQL de supabase/responses.sql.";
+    return "A tabela de respostas ainda nao foi criada no Supabase. Aplique o SQL de supabase/004_responses.sql.";
   }
 
   if (normalizedMessage.includes("permission") || normalizedMessage.includes("row-level security")) {

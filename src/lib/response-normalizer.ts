@@ -1,4 +1,5 @@
 import { isDynamicResponseAnswers } from "@/lib/response-utils";
+import { serializeCsvCell } from "@/lib/csv-cell";
 import type { ResponseAnswers, SurveyResponse } from "@/types/response";
 import type { SurveyQuestion } from "@/types/survey-question";
 
@@ -53,7 +54,7 @@ export function exportNormalizedResponsesToCsv(responses: NormalizedResponse[]) 
   ]);
 
   return [headers, ...rows]
-    .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+    .map((row) => row.map(serializeCsvCell).join(","))
     .join("\n");
 }
 

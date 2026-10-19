@@ -1,12 +1,27 @@
 import { ResponsesPanel } from "@/components/responses/responses-panel";
+import { FeedbacksPanel } from "@/components/responses/feedbacks-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageContainer } from "@/components/layout/page-container";
 import { requireCurrentCompany } from "@/lib/company";
 import { getResponseCountsByCompany } from "@/lib/responses";
 import { getCompanySurveys } from "@/lib/surveys";
 
-export default async function RespostasPage() {
+export default async function RespostasPage({
+  searchParams,
+}: {
+  searchParams: { view?: string };
+}) {
   const company = await requireCurrentCompany();
+  if (searchParams.view === "feedbacks") {
+    return (
+      <AppShell>
+        <PageContainer size="wide">
+          <FeedbacksPanel />
+        </PageContainer>
+      </AppShell>
+    );
+  }
+
   const [{ surveys, error: surveysError }, { counts, error: responsesError }] = await Promise.all([
     getCompanySurveys(company.id),
     getResponseCountsByCompany(company.id),
