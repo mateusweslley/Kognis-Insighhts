@@ -5,6 +5,7 @@ import {
   getResponsesByCompany,
   getResponsesBySurveyId,
   getSurveyQuestionsForResponses,
+  getSurveySatisfactionConfig,
 } from "@/lib/responses";
 import { isDynamicResponseAnswers } from "@/lib/response-utils";
 import {
@@ -31,6 +32,7 @@ import type {
 import type { SurveyResponse } from "@/types/response";
 import type { SurveyQuestion } from "@/types/survey-question";
 import { extractResponseData, type ExtractedResponseData } from "@/lib/metrics/extract";
+import { calculateConsolidatedRatingMetricsFromValues } from "@/lib/metrics/consolidated-metrics";
 
 export type SurveyMetrics = {
   rating: RatingStats;
@@ -159,20 +161,46 @@ export function extractNpsValues(
 
 // Insight unificado para o dashboard MVP: respostas, satisfação e NPS.
 export async function getSurveyInsight(surveyId: string): Promise<SurveyInsight> {
-  const questionsResult = await getSurveyQuestionsForResponses(surveyId);
-  if (questionsResult.error) {
-    return emptySurveyInsight(questionsResult.error);
+  const [questionsResult, responsesResult, config] = await Promise.all([
+    getSurveyQuestionsForResponses(surveyId), getResponsesBySurveyId(surveyId),
+    getSurveySatisfactionConfig(surveyId),
+  ]);
+  return calculateSurveyInsight({
+    questions: questionsResult.questions,
+    responses: responsesResult.responses,
+    error: questionsResult.error ?? responsesResult.error ?? config.error,
+    surveyId,
+    primaryQuestionId: config.primaryQuestionId,
+  });
+}
+
+/** Reuse the same complete source for the list, insight and CSV. */
+export function calculateSurveyInsight({ questions, responses, error, surveyId, primaryQuestionId = null }: {
+  questions: SurveyQuestion[];
+  responses: SurveyResponse[];
+  error: string | null;
+  surveyId?: string;
+  primaryQuestionId?: string | null;
+}): SurveyInsight {
+  if (error) return emptySurveyInsight(error);
+  if (surveyId && (questions.some((question) => question.survey_id !== surveyId)
+      || responses.some((response) => response.survey_id !== surveyId))) {
+    return emptySurveyInsight("INCOMPLETE_SURVEY_DATA: Dados fora da pesquisa.");
   }
-
-  const responsesResult = await getResponsesBySurveyId(surveyId);
-  if (responsesResult.error) {
-    return emptySurveyInsight(responsesResult.error);
+  const primaryQuestion = primaryQuestionId
+    ? questions.find((question) => question.id === primaryQuestionId) : undefined;
+  if (primaryQuestionId !== null && (!surveyId || !primaryQuestion || primaryQuestion.type !== "rating")) {
+    return emptySurveyInsight("Não foi possível interpretar a configuração de satisfação da pesquisa.");
   }
-
-  const questions = questionsResult.questions;
-  const responses = responsesResult.responses;
-
   const data = extractResponseData(responses, questions);
+
+  // Explicit primary 1–5 rating only, as in consolidated KPIs. Legacy rows
+  // contribute separately; extraction never reads their value from dynamic rows.
+  // Denominator: valid evaluations, at most one per response. No scale conversion.
+  const satisfaction = calculateConsolidatedRatingMetricsFromValues([
+    ...data.legacyRatings,
+    ...(primaryQuestion ? data.valuesByQuestion.get(primaryQuestion.id) ?? [] : []),
+  ], data.totalResponses);
 
   const identification = identifyNpsQuestion(questions);
   const { availability, questionId } = identification;
@@ -190,7 +218,7 @@ export async function getSurveyInsight(surveyId: string): Promise<SurveyInsight>
 
   return {
     totalResponses: data.totalResponses,
-    avgRating: computeRatingStats(data.legacyRatings).average,
+    avgRating: satisfaction.average,
     nps: {
       availability: resolvedAvailability,
       stats,

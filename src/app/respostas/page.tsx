@@ -4,7 +4,6 @@ import { AppShell } from "@/components/layout/app-shell";
 import { PageContainer } from "@/components/layout/page-container";
 import { requireCurrentCompany } from "@/lib/company";
 import { getResponseCountsByCompany } from "@/lib/responses";
-import { getCompanySurveys } from "@/lib/surveys";
 
 export default async function RespostasPage({
   searchParams,
@@ -22,10 +21,7 @@ export default async function RespostasPage({
     );
   }
 
-  const [{ surveys, error: surveysError }, { counts, error: responsesError }] = await Promise.all([
-    getCompanySurveys(company.id),
-    getResponseCountsByCompany(company.id),
-  ]);
+  const { surveys, counts, error } = await getResponseCountsByCompany(company.id);
 
   return (
     <AppShell>
@@ -33,7 +29,7 @@ export default async function RespostasPage({
         <ResponsesPanel
           surveys={surveys}
           responseCounts={Object.fromEntries(counts)}
-          error={responsesError ?? surveysError}
+          error={error}
         />
       </PageContainer>
     </AppShell>

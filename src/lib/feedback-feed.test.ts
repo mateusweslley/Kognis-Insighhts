@@ -108,7 +108,7 @@ describe("readFeedbackPage", () => {
       mode: "dynamic",
       answers: { a: "A", b: "B", c: "C" },
     });
-    const fetchBatch = vi.fn(async (_after: FeedbackCursor | null, _limit: number) => []);
+    const fetchBatch = vi.fn(async (_after: FeedbackCursor | null, _limit: number) => ({ rows: [], count: 0 }));
     const fetchById = vi.fn(async () => row);
     const input = {
       pageSize: 2,
@@ -118,7 +118,7 @@ describe("readFeedbackPage", () => {
       questionsBySurvey: new Map([["survey-1", ["a", "b", "c"].map((id) => question(id, "short_text"))]]),
       surveyTitles: new Map([["survey-1", "Pesquisa"]]),
       fetchBatch: async (after: FeedbackCursor | null, limit: number) => {
-        if (after === null) return [row];
+        if (after === null) return { rows: [row], count: 1 };
         return fetchBatch(after, limit);
       },
       fetchById,
@@ -143,7 +143,7 @@ describe("readFeedbackPage", () => {
       cursor: null,
       questionsBySurvey: new Map(),
       surveyTitles: new Map([["survey-1", "Pesquisa"]]),
-      fetchBatch: async () => rows,
+      fetchBatch: async () => ({ rows, count: 3 }),
       fetchById: async () => null,
     });
 
@@ -161,11 +161,12 @@ describe("readFeedbackPage", () => {
       cursor: null,
       questionsBySurvey: new Map([["survey-1", questions]]),
       surveyTitles: new Map([["survey-1", "Pesquisa"]]),
-      fetchBatch: async () => [
-        response("id-a", { mode: "dynamic", answers: { z: "Antigo id" } }, "2026-10-01T12:00:00.000Z"),
-        response("id-z", { mode: "dynamic", answers: { a: "A", z: "Z" } }, "2026-10-01T12:00:00.000Z"),
+      // Match the deterministic order guaranteed by the Supabase adapter.
+      fetchBatch: async () => ({ count: 3, rows: [
         response("id-new", { mode: "dynamic", answers: { a: "Mais novo" } }, "2026-10-02T12:00:00.000Z"),
-      ],
+        response("id-z", { mode: "dynamic", answers: { a: "A", z: "Z" } }, "2026-10-01T12:00:00.000Z"),
+        response("id-a", { mode: "dynamic", answers: { z: "Antigo id" } }, "2026-10-01T12:00:00.000Z"),
+      ] }),
       fetchById: async () => null,
     });
 
@@ -188,12 +189,12 @@ describe("readFeedbackPage", () => {
       fetchById: async () => null,
     };
 
-    expect((await readFeedbackPage({ ...base, fetchBatch: async () => [] })).state).toBe("no_responses");
+    expect((await readFeedbackPage({ ...base, fetchBatch: async () => ({ rows: [], count: 0 }) })).state).toBe("no_responses");
     expect(
-      (await readFeedbackPage({ ...base, fetchBatch: async () => [response("r1", { mode: "dynamic", answers: {} })] })).state,
+      (await readFeedbackPage({ ...base, fetchBatch: async () => ({ rows: [response("r1", { mode: "dynamic", answers: {} })], count: 1 }) })).state,
     ).toBe("no_text_feedback");
     expect(
-      (await readFeedbackPage({ ...base, cursor: { createdAt: "2026-10-01T00:00:00Z", responseId: "r1", feedbackKey: null }, fetchBatch: async () => [] })).state,
+      (await readFeedbackPage({ ...base, cursor: { createdAt: "2026-10-01T00:00:00Z", responseId: "r1", feedbackKey: null }, fetchBatch: async () => ({ rows: [], count: 0 }) })).state,
     ).toBe("end");
   });
 });

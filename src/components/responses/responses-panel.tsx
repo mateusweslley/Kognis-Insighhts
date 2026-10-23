@@ -20,6 +20,7 @@ type ResponsesPanelProps = {
 export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPanelProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const totalResponses = Object.values(responseCounts).reduce((total, count) => total + count, 0);
+  const hasAllCounts = surveys.every((survey) => responseCounts[survey.id] !== undefined);
   const filteredSurveys = useMemo(() => {
     const normalizedSearch = normalizeSearch(searchTerm);
 
@@ -55,7 +56,7 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
         </p>
       ) : null}
 
-      {surveys.length === 0 ? (
+      {!error && surveys.length === 0 ? (
         <EmptyState
           title="Nenhuma pesquisa criada ainda."
           description="Crie uma pesquisa para começar a coletar respostas dos consumidores."
@@ -64,7 +65,7 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
         />
       ) : null}
 
-      {surveys.length > 0 && totalResponses === 0 ? (
+      {!error && hasAllCounts && surveys.length > 0 && totalResponses === 0 ? (
         <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm text-text-secondary shadow-subtle">
           Nenhuma resposta recebida ainda. As respostas aparecerão aqui quando consumidores
           acessarem os links públicos ou QR Codes das pesquisas ativas.
@@ -101,7 +102,7 @@ export function ResponsesPanel({ surveys, responseCounts, error }: ResponsesPane
               </div>
               <div>
                 <p className="text-3xl font-semibold text-text-primary">
-                  {responseCounts[survey.id] ?? 0}
+                  {error || responseCounts[survey.id] === undefined ? "—" : responseCounts[survey.id]}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">respostas</p>
               </div>

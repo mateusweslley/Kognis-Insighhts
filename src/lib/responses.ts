@@ -1,11 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
+import { loadAllSurveyQuestions, loadAllSurveyResponses } from "@/lib/survey-data-pages";
+import { loadCompanyResponseCounts } from "@/lib/company-response-counts";
+import { loadFeedbackMetadata } from "@/lib/feedback-metadata";
+import { createFeedbackResponseSource } from "@/lib/feedback-response-source";
 import { exportResponsesToCsv } from "@/lib/response-utils";
 import { normalizeResponses } from "@/lib/response-normalizer";
 import {
   readFeedbackPage,
   type FeedbackCursor,
   type FeedbackQuestion,
-  type FeedbackResponse,
 } from "@/lib/feedback-feed";
 import type { PublicSurvey, ResponseAnswers, SurveyResponse, SurveyResponseWithSurvey } from "@/types/response";
 import type { SurveyQuestion } from "@/types/survey-question";
@@ -17,17 +20,6 @@ type ResponsesResult = {
 
 type SurveyResponsesResult = {
   responses: SurveyResponse[];
-  error: string | null;
-};
-
-type SurveyResponsesQueryOptions = {
-  limit?: number;
-  offset?: number;
-  cursor?: string;
-};
-
-type ResponseCountsResult = {
-  counts: Map<string, number>;
   error: string | null;
 };
 
@@ -45,15 +37,23 @@ const FEEDBACK_PAGE_SIZE = 20;
 const FEEDBACK_BATCH_SIZE = 50;
 const FEEDBACK_MAX_BATCHES = 4;
 
+/** Read configuration with the same authenticated server client and RLS as responses. */
+export async function getSurveySatisfactionConfig(surveyId: string) {
+  const { data, error } = await createClient().from("surveys")
+    .select("id,primary_question_id").eq("id", surveyId).maybeSingle();
+  if (error || !data || data.id !== surveyId
+      || (data.primary_question_id !== null
+        && (typeof data.primary_question_id !== "string" || !data.primary_question_id.trim()))) {
+    return { primaryQuestionId: null, error: "Não foi possível carregar a configuração de satisfação da pesquisa." };
+  }
+  return { primaryQuestionId: data.primary_question_id as string | null, error: null };
+}
+
 export async function getCompanyFeedbackPage(companyId: string, cursor: FeedbackCursor | null) {
   const supabase = createClient();
-  const { data: surveys, error: surveysError } = await supabase
-    .from("surveys")
-    .select("id,title")
-    .eq("company_id", companyId);
-
-  if (surveysError) return { page: null, error: getFriendlyResponsesError(surveysError.message, surveysError.code) };
-  const surveyRows = (surveys ?? []) as Array<{ id: string; title: string }>;
+  const metadata = await loadFeedbackMetadata(supabase, companyId);
+  if (metadata.error) return { page: null, error: metadata.error };
+  const surveyRows = metadata.surveys;
   if (surveyRows.length === 0) {
     return {
       page: await readFeedbackPage({
@@ -63,7 +63,7 @@ export async function getCompanyFeedbackPage(companyId: string, cursor: Feedback
         cursor,
         questionsBySurvey: new Map(),
         surveyTitles: new Map(),
-        fetchBatch: async () => [],
+        fetchBatch: async () => ({ rows: [], count: 0 }),
         fetchById: async () => null,
       }),
       error: null,
@@ -72,51 +72,14 @@ export async function getCompanyFeedbackPage(companyId: string, cursor: Feedback
 
   const surveyIds = surveyRows.map(({ id }) => id);
   const surveyTitles = new Map(surveyRows.map(({ id, title }) => [id, title]));
-  const { data: questionRows, error: questionsError } = await supabase
-    .from("survey_questions")
-    .select("id,survey_id,type,title")
-    .in("survey_id", surveyIds)
-    .in("type", ["short_text", "long_text"]);
-
-  if (questionsError) return { page: null, error: getFriendlyResponsesError(questionsError.message, questionsError.code) };
   const questionsBySurvey = new Map<string, FeedbackQuestion[]>();
-  (questionRows ?? []).forEach((row) => {
-    const question = row as { id: string; survey_id: string; type: "short_text" | "long_text"; title: string };
+  metadata.questions.forEach((question) => {
     const current = questionsBySurvey.get(question.survey_id) ?? [];
     current.push({ id: question.id, type: question.type, title: question.title });
     questionsBySurvey.set(question.survey_id, current);
   });
 
-  const fetchBatch = async (after: FeedbackCursor | null, limit: number) => {
-    let query = supabase
-      .from("responses")
-      .select("id,survey_id,answers,created_at")
-      .in("survey_id", surveyIds)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(limit);
-
-    if (after) {
-      query = query.or(
-        `created_at.lt.${after.createdAt},and(created_at.eq.${after.createdAt},id.lt.${after.responseId})`,
-      );
-    }
-
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-    return (data ?? []) as FeedbackResponse[];
-  };
-
-  const fetchById = async (responseId: string) => {
-    const { data, error } = await supabase
-      .from("responses")
-      .select("id,survey_id,answers,created_at")
-      .in("survey_id", surveyIds)
-      .eq("id", responseId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    return (data as FeedbackResponse | null) ?? null;
-  };
+  const { fetchBatch, fetchById } = createFeedbackResponseSource(supabase, surveyIds);
 
   try {
     const page = await readFeedbackPage({
@@ -138,30 +101,29 @@ export async function getCompanyFeedbackPage(companyId: string, cursor: Feedback
 
 export async function getCompanyFeedbackResponse(companyId: string, responseId: string) {
   const supabase = createClient();
-  const { data: surveys, error: surveysError } = await supabase
-    .from("surveys")
-    .select("id,title")
-    .eq("company_id", companyId);
-  if (surveysError) return { response: null, error: getFriendlyResponsesError(surveysError.message, surveysError.code) };
-  const surveyRows = (surveys ?? []) as Array<{ id: string; title: string }>;
-  if (surveyRows.length === 0) return { response: null, error: null };
-
+  // Filter the parent survey in the same authorized read, without listing the company.
   const { data, error } = await supabase
     .from("responses")
-    .select("id,survey_id,answers,created_at")
-    .in("survey_id", surveyRows.map(({ id }) => id))
+    .select("id,survey_id,answers,created_at,surveys!inner(id,title,company_id)")
+    .eq("surveys.company_id", companyId)
     .eq("id", responseId)
     .maybeSingle();
   if (error) return { response: null, error: getFriendlyResponsesError(error.message, error.code) };
   if (!data) return { response: null, error: null };
 
-  const row = data as SurveyResponse;
+  const row = data as unknown as SurveyResponse & {
+    surveys: { id: string; title: string; company_id: string };
+  };
+  if (row.id !== responseId || !row.surveys || row.surveys.id !== row.survey_id
+      || row.surveys.company_id !== companyId || typeof row.surveys.title !== "string") {
+    return { response: null, error: "INCOMPLETE_SURVEY_DATA: Associação da resposta não pôde ser validada." };
+  }
   const { questions, error: questionsError } = await getSurveyQuestionsForResponses(row.survey_id);
   if (questionsError) return { response: null, error: questionsError };
   const normalized = normalizeResponses([row], questions)[0] ?? null;
   return {
     response: normalized
-      ? { ...normalized, surveyTitle: surveyRows.find((survey) => survey.id === row.survey_id)?.title ?? "Pesquisa" }
+      ? { ...normalized, surveyTitle: row.surveys.title }
       : null,
     error: null,
   };
@@ -273,117 +235,25 @@ export async function getResponsesByCompany(companyId: string): Promise<Response
   };
 }
 
-export async function getResponseCountsByCompany(companyId: string): Promise<ResponseCountsResult> {
-  const supabase = createClient();
-
-  const { data: surveys, error: surveysError } = await supabase
-    .from("surveys")
-    .select("id")
-    .eq("company_id", companyId);
-
-  if (surveysError) {
-    console.error("Erro ao carregar pesquisas para contagem de respostas:", surveysError);
-    return {
-      counts: new Map(),
-      error: "Nao foi possivel carregar as pesquisas da empresa.",
-    };
-  }
-
-  const surveyIds = (surveys ?? []).map((survey) => (survey as { id: string }).id);
-
-  if (surveyIds.length === 0) {
-    return {
-      counts: new Map(),
-      error: null,
-    };
-  }
-
-  const { data, error } = await supabase
-    .from("responses")
-    .select("survey_id")
-    .in("survey_id", surveyIds);
-
-  if (error) {
-    console.error("Erro ao contar respostas:", error);
-    return {
-      counts: new Map(),
-      error: getFriendlyResponsesError(error.message, error.code),
-    };
-  }
-
-  const counts = new Map<string, number>();
-
-  (data ?? []).forEach((response) => {
-    const surveyId = (response as { survey_id: string }).survey_id;
-    counts.set(surveyId, (counts.get(surveyId) ?? 0) + 1);
-  });
-
-  return {
-    counts,
-    error: null,
-  };
+export async function getResponseCountsByCompany(companyId: string) {
+  return loadCompanyResponseCounts(createClient(), companyId);
 }
 
 export async function getResponsesBySurveyId(
   surveyId: string,
-  options: SurveyResponsesQueryOptions = {},
 ): Promise<SurveyResponsesResult> {
-  const supabase = createClient();
-
-  let query = supabase
-    .from("responses")
-    .select("id,survey_id,answers,created_at")
-    .eq("survey_id", surveyId)
-    .order("created_at", { ascending: false });
-
-  if (options.cursor) {
-    query = query.lt("created_at", options.cursor);
-  }
-
-  if (typeof options.offset === "number" && typeof options.limit === "number") {
-    query = query.range(options.offset, options.offset + options.limit - 1);
-  } else if (typeof options.limit === "number") {
-    query = query.limit(options.limit);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Erro ao carregar respostas da pesquisa:", error);
-    return {
-      responses: [],
-      error: getFriendlyResponsesError(error.message, error.code),
-    };
-  }
-
-  return {
-    responses: (data ?? []) as SurveyResponse[],
-    error: null,
-  };
+  // Complete analytical/export dataset, never an implicit first page.
+  const result = await loadAllSurveyResponses(createClient(), surveyId);
+  return { responses: result.rows, error: result.error };
 }
 
 export async function getSurveyQuestionsForResponses(
   surveyId: string,
 ): Promise<PublicSurveyQuestionsResult> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from("survey_questions")
-    .select("id,survey_id,type,title,description,required,position,options,created_at,updated_at")
-    .eq("survey_id", surveyId)
-    .order("position", { ascending: true });
-
-  if (error) {
-    console.error("Erro ao carregar perguntas para respostas:", error);
-    return {
-      questions: [],
-      error: getFriendlyResponsesError(error.message, error.code),
-    };
-  }
-
+  const result = await loadAllSurveyQuestions(createClient(), surveyId);
   return {
-    questions: normalizeQuestions(data ?? []),
-    error: null,
+    questions: normalizeQuestions(result.rows),
+    error: result.error,
   };
 }
 

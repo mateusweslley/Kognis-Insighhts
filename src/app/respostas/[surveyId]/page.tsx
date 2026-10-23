@@ -6,7 +6,7 @@ import { SurveyInsightPanel } from "@/components/responses/survey-insight-panel"
 import { SurveyResponsesPanel } from "@/components/responses/survey-responses-panel";
 import { requireCurrentCompany } from "@/lib/company";
 import { normalizeResponses } from "@/lib/response-normalizer";
-import { getSurveyInsight } from "@/lib/metrics/dashboard-metrics";
+import { calculateSurveyInsight } from "@/lib/metrics/dashboard-metrics";
 import { getResponsesBySurveyId, getSurveyQuestionsForResponses } from "@/lib/responses";
 import { getCompanySurveys } from "@/lib/surveys";
 
@@ -25,18 +25,22 @@ export default async function SurveyResponsesPage({ params }: SurveyResponsesPag
     notFound();
   }
 
-  const [{ responses, error: responsesError }, { questions, error: questionsError }, insight] =
+  const [{ responses, error: responsesError }, { questions, error: questionsError }] =
     await Promise.all([
       getResponsesBySurveyId(survey.id),
       getSurveyQuestionsForResponses(survey.id),
-      getSurveyInsight(survey.id),
     ]);
-  const normalizedResponses = normalizeResponses(responses, questions);
+  const dataError = responsesError ?? questionsError ?? surveysError
+    ?? (survey.primary_question_id === undefined ? "Configuração de satisfação indisponível." : null);
+  const insight = calculateSurveyInsight({ responses, questions, error: dataError,
+    surveyId: survey.id, primaryQuestionId: survey.primary_question_id });
+  // A failed source must not enable a partial CSV or display plausible KPIs.
+  const normalizedResponses = dataError ? [] : normalizeResponses(responses, questions);
 
   return (
     <AppShell>
       <PageContainer size="wide">
-        <SurveyInsightPanel insight={insight} />
+        {!insight.error ? <SurveyInsightPanel insight={insight} /> : null}
         <SurveyResponsesPanel
           survey={survey}
           responses={normalizedResponses}
